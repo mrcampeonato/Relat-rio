@@ -20,12 +20,11 @@
 
         <!-- PAINEL DE ADIÇÃO -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-            <!-- Cadastro Individual -->
             <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                 <h2 class="font-bold text-indigo-800 mb-3">👤 Cadastro Individual</h2>
-                <div class="grid grid-cols-1 gap-2">
-                    <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="p-2 border rounded-lg">
-                    <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="p-2 border rounded-lg">
+                <div class="space-y-2">
+                    <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg">
+                    <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg">
                     <div class="grid grid-cols-2 gap-2">
                         <select id="generoInd" class="p-2 border rounded-lg"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
                         <select id="perfilInd" class="p-2 border rounded-lg">
@@ -34,16 +33,15 @@
                         </select>
                     </div>
                     <input type="file" id="fotoInd" accept="image/*" capture="user" class="text-sm p-1">
-                    <button onclick="adicionarAluno()" class="bg-indigo-600 text-white font-bold py-2 rounded-lg">Salvar Aluno</button>
+                    <button onclick="adicionarAluno()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg">Salvar Aluno</button>
                 </div>
             </div>
             
-            <!-- Massa -->
             <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                 <h2 class="font-bold text-emerald-800 mb-3">📑 Importar Lista (Massa)</h2>
                 <textarea id="bulkAlunos" placeholder="Cole os nomes, um por linha..." class="w-full p-2 border rounded-lg h-20 mb-2"></textarea>
-                <input type="text" id="turmaBulk" placeholder="Turma para estes alunos" class="w-full p-2 border rounded-lg mb-2">
-                <button onclick="adicionarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Importar</button>
+                <input type="text" id="turmaBulk" placeholder="Qual a turma destes alunos?" class="w-full p-2 border rounded-lg mb-2">
+                <button onclick="adicionarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Importar Todos</button>
             </div>
         </div>
 
@@ -63,11 +61,10 @@
         </div>
     </div>
 
-    <!-- Resultados -->
     <div id="resultado" class="max-w-4xl mx-auto mt-6 p-6 bg-white rounded-2xl shadow-lg border">
-        <div class="flex justify-between items-center mb-4 no-print border-b pb-2">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
             <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-1 rounded-lg">Imprimir</button>
+            <button onclick="window.print()" class="no-print bg-gray-800 text-white px-4 py-1 rounded-lg">Imprimir</button>
         </div>
         <div id="listaRelatorios" class="space-y-4"></div>
     </div>
@@ -80,10 +77,10 @@
         let relatoriosSalvos = {};
 
         const frasesLongas = {
-            participativo: { masc: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
-            pouco_participativo: { masc: "Nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", fem: "Nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo." },
-            agitado: { masc: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
-            melhorar: { masc: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
+            participativo: { masc: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
+            pouco_participativo: { masc: "nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", fem: "nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo." },
+            agitado: { masc: "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
+            melhorar: { masc: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
         };
 
         async function carregarDados() {
@@ -94,12 +91,19 @@
         }
 
         async function adicionarAluno() {
+            const nome = document.getElementById('nomeInd').value;
+            const turma = document.getElementById('turmaInd').value;
+            if(!nome || !turma) return alert("Preencha nome e turma!");
+
             const fotoInput = document.getElementById("fotoInd");
+            let foto = "";
             if (fotoInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = async (e) => await gravar({nome: document.getElementById('nomeInd').value, turma: document.getElementById('turmaInd').value, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value, foto_url: e.target.result});
+                reader.onload = async (e) => {
+                    await gravar({nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value, foto_url: e.target.result});
+                };
                 reader.readAsDataURL(fotoInput.files[0]);
-            } else await gravar({nome: document.getElementById('nomeInd').value, turma: document.getElementById('turmaInd').value, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value});
+            } else { await gravar({nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value, foto_url: "" }); }
         }
 
         async function gravar(aluno) {
@@ -118,11 +122,11 @@
             containerAbas.innerHTML = turmas.map(t => `<button onclick="turmaAtiva='${t}'; renderizar()" class="pb-1 px-3 text-sm ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-500'}">${t}</button>`).join('');
 
             const tbody = document.getElementById("tabelaAlunos");
-            tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).map(a => `
+            tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome)).map(a => `
                 <tr>
                     <td class="p-2"><img src="${a.foto_url || 'https://via.placeholder.com/60'}" class="foto-preview"></td>
-                    <td class="p-2 font-bold">${a.nome}</td>
-                    <td class="p-2"><button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">Gerar</button></td>
+                    <td class="p-2 font-bold text-gray-700">${a.nome}</td>
+                    <td class="p-2 text-center"><button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold">GERAR</button></td>
                 </tr>
             `).join('');
         }
@@ -131,8 +135,8 @@
             const a = alunos.find(al => al.id === id);
             relatoriosSalvos[id] = `
                 <div class="p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500">
-                    <p class="font-bold">${a.nome.toUpperCase()}</p>
-                    <p class="text-sm mt-1"><strong>${a.turma}</strong>: ${a.nome} ${frasesLongas[a.perfil][a.genero]}</p>
+                    <p class="font-bold text-gray-800">${a.nome.toUpperCase()}</p>
+                    <p class="text-sm mt-1 text-gray-700">${a.nome} ${frasesLongas[a.perfil][a.genero]}</p>
                 </div>
             `;
             document.getElementById("listaRelatorios").innerHTML = Object.values(relatoriosSalvos).join('');
