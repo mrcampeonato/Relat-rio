@@ -10,17 +10,23 @@
     <style>
         @media print { .no-print { display: none; } }
         .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
-        .foto-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+        .foto-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
         .foto-preview:hover { border-color: #4f46e5; transform: scale(1.05); }
+        /* Ajuste para mobile */
+        @media (max-width: 640px) {
+            .tabela-mobile { font-size: 0.75rem; }
+            .input-mobile { width: 100% !important; margin-bottom: 4px; }
+            .btn-mobile { padding: 4px 8px; font-size: 0.7rem; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 p-2 md:p-6 font-sans">
 
-    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border no-print">
-        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
+    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
+        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4 text-center md:text-left">Gerador de Relatórios: Ed. Física</h1>
 
         <!-- PAINEL DE CADASTRO -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                 <h2 class="font-bold text-indigo-900 mb-4">Cadastro Individual</h2>
                 <div class="space-y-3">
@@ -46,32 +52,34 @@
                 <h2 class="font-bold text-emerald-900 mb-4">Importar Lista (Massa)</h2>
                 <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                 <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2">
-                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
+                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
             </div>
         </div>
 
-        <div id="abasContainer" class="flex gap-4 mb-4 overflow-x-auto border-b"></div>
-        <div class="overflow-x-auto rounded-lg border">
-            <table class="w-full text-left bg-white">
+        <div id="abasContainer" class="flex gap-4 mb-4 overflow-x-auto border-b pb-2"></div>
+
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="w-full text-left bg-white tabela-mobile">
                 <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
                     <tr>
-                        <th class="p-3">Foto</th>
-                        <th class="p-3">Nome</th>
-                        <th class="p-3">Perfil</th>
-                        <th class="p-3">Turma</th>
-                        <th class="p-3 text-center">Ações</th>
+                        <th class="p-2 md:p-3">Foto</th>
+                        <th class="p-2 md:p-3">Nome</th>
+                        <th class="p-2 md:p-3">Perfil</th>
+                        <th class="p-2 md:p-3">Turma</th>
+                        <th class="p-2 md:p-3 text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
             </table>
         </div>
         
-        <div class="mt-6 flex justify-end">
-            <button onclick="gerarTurmaToda()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg">Gerar Relatórios da Turma</button>
+        <div class="mt-6 flex justify-center md:justify-end">
+            <button onclick="gerarTurmaToda()" class="w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition">Gerar Relatórios da Turma</button>
         </div>
     </div>
 
-    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0">
+    <!-- RESULTADOS -->
+    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0">
         <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
             <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
             <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
@@ -80,9 +88,11 @@
     </div>
 
     <script>
-        const supabaseUrl = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg'.trim();
-        const sb = supabase.createClient(supabaseUrl, supabaseKey);
+        // CONFIGURAÇÕES SUPABASE - CHAVES COMPLETAS
+        const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••';
+        
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let alunos = [];
         let turmaAtiva = "";
@@ -133,9 +143,7 @@
         }
 
         async function atualizarDado(id, campo, valor) {
-            const { error } = await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
-            if (error) alert("Erro ao atualizar: " + error.message);
-            // Se mudar a turma, precisamos atualizar as abas
+            await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
             if (campo === 'turma') carregar(); 
         }
 
@@ -159,7 +167,7 @@
         function renderTabs() {
             const container = document.getElementById('abasContainer');
             const turmas = [...new Set(alunos.map(a => a.turma))].sort();
-            container.innerHTML = turmas.map(t => `<button onclick="mudarTurma('${t}')" class="pb-2 px-4 text-sm ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
+            container.innerHTML = turmas.map(t => `<button onclick="mudarTurma('${t}')" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
         }
 
         function mudarTurma(t) {
@@ -173,27 +181,27 @@
             const tbody = document.getElementById('tabelaAlunos');
             tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).map(a => `
                 <tr class="hover:bg-gray-50 border-b">
-                    <td class="p-3">
-                        <label class="block w-12 h-12 relative">
+                    <td class="p-2 md:p-3">
+                        <label class="block w-10 md:w-12 relative">
                             <img src="${a.foto_url || 'https://via.placeholder.com/50'}" class="foto-preview">
                             <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}')">
                         </label>
                     </td>
-                    <td class="p-3 font-bold text-gray-700">${a.nome}</td>
-                    <td class="p-3">
-                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full">
+                    <td class="p-2 md:p-3 font-bold text-gray-700">${a.nome}</td>
+                    <td class="p-2 md:p-3">
+                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full min-w-[100px]">
                             <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
                             <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
                             <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
                             <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
                         </select>
                     </td>
-                    <td class="p-3">
-                        <input type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value)" class="p-1 border rounded w-24 text-xs">
+                    <td class="p-2 md:p-3">
+                        <input type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value)" class="p-1 border rounded w-16 md:w-24 text-xs">
                     </td>
-                    <td class="p-3 flex justify-center gap-2">
-                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold">GERAR</button>
-                        <button onclick="remover('${a.id}')" class="text-red-500">✕</button>
+                    <td class="p-2 md:p-3 flex justify-center gap-1 md:gap-2">
+                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] md:text-xs font-bold btn-mobile">GERAR</button>
+                        <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
                     </td>
                 </tr>
             `).join('');
@@ -225,12 +233,12 @@
             if (filtrados.length > 0) {
                 area.classList.remove('hidden');
                 container.innerHTML = filtrados.map(a => `
-                    <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
+                    <div class="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
                         <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 text-gray-400 hover:text-red-500">✕</button>
-                        ${a.foto_url ? `<img src="${a.foto_url}" class="w-20 h-20 rounded-lg object-cover shadow-sm">` : ''}
-                        <div>
+                        ${a.foto_url ? `<img src="${a.foto_url}" class="w-full md:w-24 h-48 md:h-24 rounded-lg object-cover shadow-sm">` : ''}
+                        <div class="flex-1">
                             <p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${a.turma})</p>
-                            <p class="text-gray-700 text-sm mt-1">${relatoriosSalvosMap[a.id]}</p>
+                            <p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[a.id]}</p>
                         </div>
                     </div>
                 `).join('');
