@@ -33,7 +33,7 @@
                         </select>
                     </div>
                     <input type="file" id="fotoInd" accept="image/*" capture="user" class="text-sm p-1">
-                    <button onclick="adicionarAluno()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg">Salvar Aluno</button>
+                    <button id="btnSalvar" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg">Salvar Aluno</button>
                 </div>
             </div>
             
@@ -41,7 +41,7 @@
                 <h2 class="font-bold text-emerald-800 mb-3">Importar Lista (Massa)</h2>
                 <textarea id="bulkAlunos" placeholder="Cole os nomes, um por linha..." class="w-full p-2 border rounded-lg h-20 mb-2"></textarea>
                 <input type="text" id="turmaBulk" placeholder="Qual a turma destes alunos?" class="w-full p-2 border rounded-lg mb-2">
-                <button onclick="adicionarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Importar Todos</button>
+                <button id="btnImportar" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Importar Todos</button>
             </div>
         </div>
 
@@ -57,7 +57,7 @@
         </div>
         
         <div class="mt-6 flex justify-end">
-            <button onclick="gerarTurmaToda()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold">Gerar Relatórios da Turma</button>
+            <button id="btnGerarTurma" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold">Gerar Relatórios da Turma</button>
         </div>
     </div>
 
@@ -77,11 +77,16 @@
         let relatoriosSalvos = {};
 
         const frasesLongas = {
-            participativo: { masc: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
-            pouco_participativo: { masc: "nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", fem: "nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo." },
-            agitado: { masc: "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
-            melhorar: { masc: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
+            participativo: { masc: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
+            pouco_participativo: { masc: "Nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", fem: "Nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo." },
+            agitado: { masc: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
+            melhorar: { masc: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
         };
+
+        // --- FUNÇÕES DE LIGAÇÃO (EVENT LISTENERS) ---
+        document.getElementById('btnSalvar').addEventListener('click', adicionarAluno);
+        document.getElementById('btnImportar').addEventListener('click', adicionarMassa);
+        document.getElementById('btnGerarTurma').addEventListener('click', gerarTurmaToda);
 
         async function carregarDados() {
             const { data } = await supabase.from('alunos').select('*').order('nome');
@@ -93,9 +98,9 @@
         async function adicionarAluno() {
             const nome = document.getElementById('nomeInd').value;
             const turma = document.getElementById('turmaInd').value;
+            const fotoInput = document.getElementById("fotoInd");
             if(!nome || !turma) return alert("Preencha nome e turma!");
 
-            const fotoInput = document.getElementById("fotoInd");
             let foto = "";
             if (fotoInput.files[0]) {
                 const reader = new FileReader();
@@ -136,7 +141,7 @@
             relatoriosSalvos[id] = `
                 <div class="p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500">
                     <p class="font-bold text-gray-800">${a.nome.toUpperCase()}</p>
-                    <p class="text-sm mt-1 text-gray-700">${a.nome} ${frasesLongas[a.perfil][a.genero]}</p>
+                    <p class="text-sm mt-1 text-gray-700"><strong>${a.turma}</strong>: ${a.nome} ${frasesLongas[a.perfil][a.genero]}</p>
                 </div>
             `;
             document.getElementById("listaRelatorios").innerHTML = Object.values(relatoriosSalvos).join('');
