@@ -6,7 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print { .no-print { display: none; } }
-        .foto-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+        .foto-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; }
         .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
     </style>
 </head>
@@ -61,19 +61,21 @@
         </div>
     </div>
 
-    <!-- ÁREA DE IMPRESSÃO / RESULTADOS -->
     <div id="resultado" class="max-w-4xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border">
         <div class="flex justify-between items-center mb-8 no-print border-b pb-4">
             <h2 class="text-2xl font-bold text-gray-800">Relatórios Gerados</h2>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold no-print">Imprimir / PDF</button>
+            <div class="flex gap-2">
+                <button onclick="limparRelatorios()" class="text-red-500 font-medium px-4 py-2 hover:bg-red-50 rounded-lg">Limpar Tudo</button>
+                <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold no-print">Imprimir / PDF</button>
+            </div>
         </div>
         <div id="listaRelatorios" class="space-y-8"></div>
     </div>
 
     <script>
-        let alunos = [];
-        let turmaAtiva = "";
-        let relatoriosSalvos = {};
+        let alunos = JSON.parse(localStorage.getItem('alunosEdFisica')) || [];
+        let turmaAtiva = localStorage.getItem('turmaAtivaEdFisica') || "";
+        let relatoriosSalvos = JSON.parse(localStorage.getItem('relatoriosSalvosEdFisica')) || {};
 
         const frasesLongas = {
             participativo: { masc: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
@@ -81,6 +83,12 @@
             agitado: { masc: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
             melhorar: { masc: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
         };
+
+        function salvarDados() {
+            localStorage.setItem('alunosEdFisica', JSON.stringify(alunos));
+            localStorage.setItem('turmaAtivaEdFisica', turmaAtiva);
+            localStorage.setItem('relatoriosSalvosEdFisica', JSON.stringify(relatoriosSalvos));
+        }
 
         function adicionarAluno() {
             const nome = document.getElementById("nomeInd").value;
@@ -98,6 +106,7 @@
         function finalizarCadastro(nome, turma, foto) {
             alunos.push({ id: Date.now() + Math.random(), nome, turma, foto, genero: document.getElementById("generoInd").value, perfil: document.getElementById("perfilInd").value });
             turmaAtiva = turma;
+            salvarDados();
             atualizarInterface();
         }
 
@@ -109,6 +118,7 @@
                 if(n.trim()) alunos.push({ id: Date.now() + Math.random(), nome: n.trim(), turma, genero: 'masc', perfil: 'participativo', foto: "" });
             });
             turmaAtiva = turma;
+            salvarDados();
             atualizarInterface();
         }
 
@@ -134,11 +144,11 @@
             `).join('');
         }
 
-        function mudarDado(id, campo, valor) { alunos.find(a => a.id === id)[campo] = valor; }
-        function mudarTurma(t) { turmaAtiva = t; atualizarInterface(); }
+        function mudarDado(id, campo, valor) { alunos.find(a => a.id === id)[campo] = valor; salvarDados(); }
+        function mudarTurma(t) { turmaAtiva = t; salvarDados(); atualizarInterface(); }
         function trocarFoto(input, id) {
             const reader = new FileReader();
-            reader.onload = e => { alunos.find(a => a.id === id).foto = e.target.result; atualizarInterface(); atualizarRelatorios(); };
+            reader.onload = e => { alunos.find(a => a.id === id).foto = e.target.result; salvarDados(); atualizarInterface(); atualizarRelatorios(); };
             reader.readAsDataURL(input.files[0]);
         }
 
@@ -155,6 +165,7 @@
                     </div>
                 </div>
             `;
+            salvarDados();
             atualizarRelatorios();
         }
 
@@ -162,14 +173,17 @@
 
         function atualizarRelatorios() {
             const container = document.getElementById("listaRelatorios");
-            // Filtra os IDs que pertencem à turma ativa e ordena
             const idsTurmaAtiva = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
             container.innerHTML = Object.keys(relatoriosSalvos)
                 .filter(id => idsTurmaAtiva.includes(parseFloat(id)))
                 .map(id => relatoriosSalvos[id]).join('');
         }
 
-        function removerAluno(id) { delete relatoriosSalvos[id]; alunos = alunos.filter(a => a.id !== id); atualizarInterface(); atualizarRelatorios(); }
+        function removerAluno(id) { delete relatoriosSalvos[id]; alunos = alunos.filter(a => a.id !== id); salvarDados(); atualizarInterface(); atualizarRelatorios(); }
+        function limparRelatorios() { relatoriosSalvos = {}; salvarDados(); atualizarRelatorios(); }
+        
+        // Inicializa ao carregar a página
+        window.onload = () => { atualizarInterface(); atualizarRelatorios(); };
     </script>
 </body>
 </html>
