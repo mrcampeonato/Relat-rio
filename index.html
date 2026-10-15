@@ -69,7 +69,7 @@
     </div>
 
     <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0">
-        <div class="flex justify-between items-center mb-6 no-print">
+        <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
             <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
             <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
         </div>
@@ -77,17 +77,13 @@
     </div>
 
     <script>
-        // LIMPANDO AS CHAVES PARA EVITAR O ERRO DE HEADERS
-        const rawUrl = 'https://pojvyniepaloewkqmwsq.supabase.co';
-        const rawKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg';
-        
-        const supabaseUrl = rawUrl.trim();
-        const supabaseKey = rawKey.trim();
+        const supabaseUrl = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
+        const supabaseKey = 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••'.trim();
         const sb = supabase.createClient(supabaseUrl, supabaseKey);
 
         let alunos = [];
         let turmaAtiva = "";
-        let relatoriosNaTela = {};
+        let relatoriosSalvosMap = {}; // ID do aluno -> texto do relatório
 
         const frasesLongas = {
             participativo: { masc: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
@@ -97,9 +93,16 @@
         };
 
         async function carregar() {
-            const { data, error } = await sb.from('alunos').select('*').order('nome');
-            if (error) { console.error("Erro Supabase:", error); return; }
-            alunos = data || [];
+            const { data: dataAlunos, error: errA } = await sb.from('alunos').select('*').order('nome');
+            if (errA) return console.error("Erro Alunos:", errA);
+            alunos = dataAlunos || [];
+
+            const { data: dataRels, error: errR } = await sb.from('relatorios').select('*');
+            if (!errR && dataRels) {
+                relatoriosSalvosMap = {};
+                dataRels.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
+            }
+
             if (alunos.length > 0 && !turmaAtiva) turmaAtiva = alunos[0].turma;
             renderTabs();
             renderTabela();
@@ -110,11 +113,9 @@
             const nome = document.getElementById('nomeInd').value.trim();
             const turma = document.getElementById('turmaInd').value.trim();
             if (!nome || !turma) return alert("Preencha Nome e Turma!");
-
             const novo = { nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value, foto_url: "" };
             const { error } = await sb.from('alunos').insert([novo]);
-            if (error) return alert("Erro ao salvar: " + error.message);
-            
+            if (error) return alert("Erro: " + error.message);
             document.getElementById('nomeInd').value = "";
             carregar();
         }
@@ -123,11 +124,8 @@
             const texto = document.getElementById('bulkAlunos').value.trim();
             const turma = document.getElementById('turmaBulk').value.trim();
             if (!texto || !turma) return alert("Preencha a lista e a turma!");
-
             const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: 'masc', perfil: 'participativo' }));
-            const { error } = await sb.from('alunos').insert(novos);
-            if (error) return alert("Erro: " + error.message);
-
+            await sb.from('alunos').insert(novos);
             document.getElementById('bulkAlunos').value = "";
             carregar();
         }
@@ -136,8 +134,7 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = async (e) => {
-                    const { error } = await sb.from('alunos').update({ foto_url: e.target.result }).eq('id', id);
-                    if (error) alert("Erro na foto: " + error.message);
+                    await sb.from('alunos').update({ foto_url: e.target.result }).eq('id', id);
                     carregar();
                 };
                 reader.readAsDataURL(input.files[0]);
@@ -147,7 +144,6 @@
         async function remover(id) {
             if (!confirm("Excluir este aluno?")) return;
             await sb.from('alunos').delete().eq('id', id);
-            delete relatoriosNaTela[id];
             carregar();
         }
 
@@ -166,8 +162,7 @@
 
         function renderTabela() {
             const tbody = document.getElementById('tabelaAlunos');
-            const filtrados = alunos.filter(a => a.turma === turmaAtiva);
-            tbody.innerHTML = filtrados.map(a => `
+            tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).map(a => `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-3">
                         <label class="block w-12 h-12 relative">
@@ -184,19 +179,14 @@
             `).join('');
         }
 
-        function gerarIndividual(id) {
+        async function gerarIndividual(id) {
             const a = alunos.find(al => al.id === id);
-            const texto = frasesLongas[a.perfil][a.genero];
-            relatoriosNaTela[id] = `
-                <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
-                    <button onclick="removerRelatorio('${id}')" class="no-print absolute top-2 right-2 text-gray-400">✕</button>
-                    ${a.foto_url ? `<img src="${a.foto_url}" class="w-20 h-20 rounded-lg object-cover">` : ''}
-                    <div>
-                        <p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${a.turma})</p>
-                        <p class="text-gray-700 text-sm mt-1">${a.nome} ${texto}</p>
-                    </div>
-                </div>
-            `;
+            const textoFinal = `${a.nome} ${frasesLongas[a.perfil][a.genero]}`;
+            
+            // Salvar no Banco
+            await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
+            
+            relatoriosSalvosMap[id] = textoFinal;
             renderRelatorios();
         }
 
@@ -204,14 +194,32 @@
             alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id));
         }
 
-        function removerRelatorio(id) { delete relatoriosNaTela[id]; renderRelatorios(); }
+        async function removerRelatorio(id) {
+            await sb.from('relatorios').delete().eq('aluno_id', id);
+            delete relatoriosSalvosMap[id];
+            renderRelatorios();
+        }
 
         function renderRelatorios() {
             const area = document.getElementById('resultadoArea');
             const container = document.getElementById('listaRelatorios');
-            const idsAtivos = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
-            const html = Object.keys(relatoriosNaTela).filter(id => idsAtivos.includes(id)).map(id => relatoriosNaTela[id]).join('');
-            if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else { area.classList.add('hidden'); }
+            const filtrados = alunos.filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id]);
+
+            if (filtrados.length > 0) {
+                area.classList.remove('hidden');
+                container.innerHTML = filtrados.map(a => `
+                    <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
+                        <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 text-gray-400 hover:text-red-500">✕</button>
+                        ${a.foto_url ? `<img src="${a.foto_url}" class="w-20 h-20 rounded-lg object-cover">` : ''}
+                        <div>
+                            <p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${a.turma})</p>
+                            <p class="text-gray-700 text-sm mt-1">${relatoriosSalvosMap[a.id]}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                area.classList.add('hidden');
+            }
         }
 
         window.onload = carregar;
