@@ -9,46 +9,141 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @media print { .no-print { display: none; } }
-        .foto-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
+        .foto-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; }
+        .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
     </style>
 </head>
-<body class="bg-gray-100 p-4 font-sans">
-    <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-        <!-- Substitua os dados abaixo pelos seus do Supabase -->
-        <script>
-            const supabase = supabase.createClient('https://pojvyniepaloewkqmwsq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg');
-            let alunos = [];
-        </script>
+<body class="bg-gray-50 p-2 md:p-8 font-sans">
 
-        <!-- Cadastro -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <input type="text" id="nomeInd" placeholder="Nome" class="p-2 border rounded">
-            <input type="text" id="turmaInd" placeholder="Turma" class="p-2 border rounded">
-            <select id="generoInd" class="p-2 border rounded"><option value="masc">Masc</option><option value="fem">Fem</option></select>
-            <select id="perfilInd" class="p-2 border rounded"><option value="participativo">Participativo</option><option value="pouco_participativo">Pouco Part.</option><option value="agitado">Agitado</option><option value="melhorar">Melhorar</option></select>
-            <input type="file" id="fotoInd" accept="image/*" class="col-span-2 p-2 border rounded">
-            <button onclick="salvarAlunoSupabase()" class="col-span-2 bg-blue-600 text-white py-2 rounded">Salvar Aluno</button>
+    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
+        <h1 class="text-2xl font-extrabold mb-6 text-gray-800 border-b pb-2">⚽ Relatórios Ed. Física</h1>
+
+        <!-- PAINEL DE ADIÇÃO (LIMPO) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div class="bg-gray-50 p-3 rounded-xl border">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="col-span-2 p-2 border rounded">
+                    <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="p-2 border rounded">
+                    <select id="generoInd" class="p-2 border rounded"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
+                    <select id="perfilInd" class="col-span-2 p-2 border rounded">
+                        <option value="participativo">Participativo</option><option value="pouco_participativo">Pouco participativo</option>
+                        <option value="agitado">Agitado</option><option value="melhorar">Precisa melhorar</option>
+                    </select>
+                    <input type="file" id="fotoInd" accept="image/*" capture="user" class="col-span-2 text-sm p-1">
+                    <button onclick="adicionarAluno()" class="col-span-2 bg-indigo-600 text-white font-bold py-2 rounded-lg">Salvar Aluno</button>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 p-3 rounded-xl border">
+                <textarea id="bulkAlunos" placeholder="Lista de nomes (um por linha)" class="w-full p-2 border rounded h-20 mb-2"></textarea>
+                <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded mb-2">
+                <button onclick="adicionarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg">Importar em Massa</button>
+            </div>
         </div>
 
-        <!-- Tabela -->
+        <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
+
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <tbody id="tabelaAlunos"></tbody>
+            <table class="w-full text-left">
+                <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
+                    <tr><th class="p-2">Foto</th><th class="p-2">Nome</th><th class="p-2">Gên</th><th class="p-2">Perfil</th><th class="p-2 text-center">Ações</th></tr>
+                </thead>
+                <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
             </table>
+        </div>
+        
+        <div class="mt-4 flex justify-end">
+            <button onclick="gerarTurmaToda()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold">Gerar Relatórios</button>
         </div>
     </div>
 
+    <div id="resultado" class="max-w-4xl mx-auto mt-6 p-6 bg-white rounded-2xl shadow-lg border">
+        <div class="flex justify-between items-center mb-4 no-print border-b pb-2">
+            <h2 class="text-xl font-bold">Relatórios Gerados</h2>
+            <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-1 rounded-lg">Imprimir</button>
+        </div>
+        <div id="listaRelatorios" class="space-y-4"></div>
+    </div>
+
     <script>
-        // Função para carregar dados do Supabase
+        const supabase = supabase.createClient('https://pojvyniepaloewkqmwsq.supabase.co', 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••');
+        
+        let alunos = [];
+        let turmaAtiva = "";
+        let relatoriosSalvos = {};
+
+        const frasesLongas = {
+            participativo: { masc: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
+            pouco_participativo: { masc: "Nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", fem: "Nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo." },
+            agitado: { masc: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
+            melhorar: { masc: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
+        };
+
         async function carregarDados() {
-            const { data, error } = await supabase.from('alunos').select('*');
-            if(data) { alunos = data; renderizarTabela(); }
+            const { data } = await supabase.from('alunos').select('*');
+            if(data) { alunos = data; atualizarInterface(); }
         }
 
-        async function salvarAlunoSupabase() {
-            // ... aqui você adicionaria a lógica de inserir no Supabase (alunos.insert)
-            // Para simplificar agora, foque em carregar o index.html e conectar o banco
-            alert("Conecte seu banco de dados no script para salvar na nuvem!");
+        async function adicionarAluno() {
+            const nome = document.getElementById("nomeInd").value;
+            const turma = document.getElementById("turmaInd").value;
+            const fotoInput = document.getElementById("fotoInd");
+            
+            let fotoBase64 = "";
+            if (fotoInput.files && fotoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    await salvarNoSupabase(nome, turma, e.target.result);
+                };
+                reader.readAsDataURL(fotoInput.files[0]);
+            } else { await salvarNoSupabase(nome, turma, ""); }
+        }
+
+        async function salvarNoSupabase(nome, turma, foto) {
+            const novo = { nome, turma, genero: document.getElementById("generoInd").value, perfil: document.getElementById("perfilInd").value, foto_url: foto };
+            await supabase.from('alunos').insert([novo]);
+            carregarDados();
+        }
+
+        async function removerAluno(id) {
+            await supabase.from('alunos').delete().eq('id', id);
+            carregarDados();
+        }
+
+        function atualizarInterface() {
+            const containerAbas = document.getElementById("abasContainer");
+            const turmas = [...new Set(alunos.map(a => a.turma))].sort();
+            if(!turmaAtiva && turmas.length > 0) turmaAtiva = turmas[0];
+            
+            containerAbas.innerHTML = turmas.map(t => `<button onclick="mudarTurma('${t}')" class="pb-2 px-2 text-sm ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
+
+            const tbody = document.getElementById("tabelaAlunos");
+            tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome)).map(a => `
+                <tr>
+                    <td class="p-2"><img src="${a.foto_url || 'https://via.placeholder.com/60?text=+'}" class="foto-preview"></td>
+                    <td class="p-2 font-bold">${a.nome}</td>
+                    <td class="p-2">${a.genero}</td>
+                    <td class="p-2">${a.perfil}</td>
+                    <td class="p-2 text-center"><button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">Gerar</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function mudarTurma(t) { turmaAtiva = t; atualizarInterface(); }
+
+        function gerarIndividual(id) {
+            const a = alunos.find(al => al.id === id);
+            relatoriosSalvos[id] = `
+                <div class="p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500">
+                    <p class="font-bold">${a.nome} - ${a.turma}</p>
+                    <p class="text-sm mt-1">${a.genero==='masc'?'O aluno':'A aluna'} ${frasesLongas[a.perfil][a.genero]}</p>
+                </div>
+            `;
+            document.getElementById("listaRelatorios").innerHTML = Object.values(relatoriosSalvos).join('');
+        }
+
+        function gerarTurmaToda() {
+            alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id));
         }
 
         window.onload = carregarDados;
