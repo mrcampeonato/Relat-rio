@@ -15,7 +15,6 @@
         /* Ajuste para mobile */
         @media (max-width: 640px) {
             .tabela-mobile { font-size: 0.75rem; }
-            .input-mobile { width: 100% !important; margin-bottom: 4px; }
             .btn-mobile { padding: 4px 8px; font-size: 0.7rem; }
         }
     </style>
@@ -52,11 +51,18 @@
                 <h2 class="font-bold text-emerald-900 mb-4">Importar Lista (Massa)</h2>
                 <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                 <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2">
-                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
+                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
             </div>
         </div>
 
-        <div id="abasContainer" class="flex gap-4 mb-4 overflow-x-auto border-b pb-2"></div>
+        <!-- ABAS -->
+        <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
+
+        <!-- AÇÕES DA TURMA -->
+        <div id="acoesTurma" class="flex gap-2 mb-4 justify-end hidden">
+            <button onclick="renomearTurma()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-200">Renomear Turma</button>
+            <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg hover:bg-red-100 font-bold">Excluir Turma Toda</button>
+        </div>
 
         <div class="overflow-x-auto rounded-lg border border-gray-200">
             <table class="w-full text-left bg-white tabela-mobile">
@@ -65,7 +71,6 @@
                         <th class="p-2 md:p-3">Foto</th>
                         <th class="p-2 md:p-3">Nome</th>
                         <th class="p-2 md:p-3">Perfil</th>
-                        <th class="p-2 md:p-3">Turma</th>
                         <th class="p-2 md:p-3 text-center">Ações</th>
                     </tr>
                 </thead>
@@ -88,7 +93,7 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES SUPABASE - CHAVES COMPLETAS
+        // CONFIGURAÇÕES SUPABASE
         const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co';
         const SUPABASE_KEY = 'eyJhbGci••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••';
         
@@ -107,14 +112,12 @@
 
         async function carregar() {
             const { data: dataAlunos, error: errA } = await sb.from('alunos').select('*').order('nome');
-            if (errA) return console.error("Erro Alunos:", errA);
+            if (errA) return console.error(errA);
             alunos = dataAlunos || [];
 
-            const { data: dataRels, error: errR } = await sb.from('relatorios').select('*');
-            if (!errR && dataRels) {
-                relatoriosSalvosMap = {};
-                dataRels.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
-            }
+            const { data: dataRels } = await sb.from('relatorios').select('*');
+            relatoriosSalvosMap = {};
+            if (dataRels) dataRels.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
 
             if (alunos.length > 0 && !turmaAtiva) turmaAtiva = alunos[0].turma;
             renderTabs();
@@ -126,8 +129,8 @@
             const nome = document.getElementById('nomeInd').value.trim();
             const turma = document.getElementById('turmaInd').value.trim();
             if (!nome || !turma) return alert("Preencha Nome e Turma!");
-            const { error } = await sb.from('alunos').insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value }]);
-            if (error) return alert("Erro: " + error.message);
+            const novo = { nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value };
+            await sb.from('alunos').insert([novo]);
             document.getElementById('nomeInd').value = "";
             carregar();
         }
@@ -144,7 +147,29 @@
 
         async function atualizarDado(id, campo, valor) {
             await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
-            if (campo === 'turma') carregar(); 
+            // Se mudou o perfil e já tinha relatório, apaga o relatório antigo do banco
+            if (campo === 'perfil') {
+                await sb.from('relatorios').delete().eq('aluno_id', id);
+                delete relatoriosSalvosMap[id];
+            }
+            if (campo === 'turma') carregar(); else renderTabela(); renderRelatorios();
+        }
+
+        async function renomearTurma() {
+            const novoNome = prompt(`Novo nome para a turma "${turmaAtiva}":`);
+            if (novoNome && novoNome.trim() !== "") {
+                await sb.from('alunos').update({ turma: novoNome.trim() }).eq('turma', turmaAtiva);
+                turmaAtiva = novoNome.trim();
+                carregar();
+            }
+        }
+
+        async function excluirTurma() {
+            if (confirm(`ATENÇÃO: Isso apagará TODOS os alunos da turma "${turmaAtiva}". Deseja continuar?`)) {
+                await sb.from('alunos').delete().eq('turma', turmaAtiva);
+                turmaAtiva = "";
+                carregar();
+            }
         }
 
         async function alterarFoto(input, id) {
@@ -159,36 +184,40 @@
         }
 
         async function remover(id) {
-            if (!confirm("Excluir este aluno?")) return;
-            await sb.from('alunos').delete().eq('id', id);
-            carregar();
+            if (confirm("Excluir este aluno?")) {
+                await sb.from('alunos').delete().eq('id', id);
+                carregar();
+            }
         }
 
         function renderTabs() {
             const container = document.getElementById('abasContainer');
+            const acoes = document.getElementById('acoesTurma');
             const turmas = [...new Set(alunos.map(a => a.turma))].sort();
-            container.innerHTML = turmas.map(t => `<button onclick="mudarTurma('${t}')" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
+            
+            if (turmas.length > 0) {
+                acoes.classList.remove('hidden');
+                container.innerHTML = turmas.map(t => `<button onclick="mudarTurma('${t}')" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
+            } else {
+                acoes.classList.add('hidden');
+                container.innerHTML = "";
+            }
         }
 
-        function mudarTurma(t) {
-            turmaAtiva = t;
-            renderTabs();
-            renderTabela();
-            renderRelatorios();
-        }
+        function mudarTurma(t) { turmaAtiva = t; renderTabs(); renderTabela(); renderRelatorios(); }
 
         function renderTabela() {
             const tbody = document.getElementById('tabelaAlunos');
             tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).map(a => `
                 <tr class="hover:bg-gray-50 border-b">
-                    <td class="p-2 md:p-3">
-                        <label class="block w-10 md:w-12 relative">
+                    <td class="p-2">
+                        <label class="block w-10 h-10 relative">
                             <img src="${a.foto_url || 'https://via.placeholder.com/50'}" class="foto-preview">
                             <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}')">
                         </label>
                     </td>
-                    <td class="p-2 md:p-3 font-bold text-gray-700">${a.nome}</td>
-                    <td class="p-2 md:p-3">
+                    <td class="p-2 font-bold text-gray-700">${a.nome}</td>
+                    <td class="p-2">
                         <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full min-w-[100px]">
                             <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
                             <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
@@ -196,10 +225,7 @@
                             <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
                         </select>
                     </td>
-                    <td class="p-2 md:p-3">
-                        <input type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value)" class="p-1 border rounded w-16 md:w-24 text-xs">
-                    </td>
-                    <td class="p-2 md:p-3 flex justify-center gap-1 md:gap-2">
+                    <td class="p-2 text-center flex justify-center gap-1 md:gap-2">
                         <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] md:text-xs font-bold btn-mobile">GERAR</button>
                         <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
                     </td>
@@ -228,23 +254,22 @@
         function renderRelatorios() {
             const area = document.getElementById('resultadoArea');
             const container = document.getElementById('listaRelatorios');
-            const filtrados = alunos.filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id]);
-
-            if (filtrados.length > 0) {
-                area.classList.remove('hidden');
-                container.innerHTML = filtrados.map(a => `
+            const idsAtivos = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
+            const html = Object.keys(relatoriosSalvosMap).filter(id => idsAtivos.includes(id)).map(id => {
+                const a = alunos.find(al => al.id === id);
+                return `
                     <div class="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
-                        <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 text-gray-400 hover:text-red-500">✕</button>
-                        ${a.foto_url ? `<img src="${a.foto_url}" class="w-full md:w-24 h-48 md:h-24 rounded-lg object-cover shadow-sm">` : ''}
+                        <button onclick="removerRelatorio('${id}')" class="no-print absolute top-2 right-2 text-gray-400 hover:text-red-500">✕</button>
+                        ${a && a.foto_url ? `<img src="${a.foto_url}" class="w-full md:w-24 h-48 md:h-24 rounded-lg object-cover shadow-sm">` : ''}
                         <div class="flex-1">
-                            <p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${a.turma})</p>
-                            <p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[a.id]}</p>
+                            <p class="font-bold text-gray-800">${a ? a.nome.toUpperCase() : ''} (${turmaAtiva})</p>
+                            <p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[id]}</p>
                         </div>
                     </div>
-                `).join('');
-            } else {
-                area.classList.add('hidden');
-            }
+                `;
+            }).join('');
+            
+            if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else { area.classList.add('hidden'); }
         }
 
         window.onload = carregar;
