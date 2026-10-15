@@ -2,83 +2,62 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatórios Educação Física</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print { .no-print { display: none; } }
         .foto-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
-        .foto-preview:hover { border-color: #4f46e5; transform: scale(1.05); }
         .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
     </style>
 </head>
 <body class="bg-gray-50 p-4 md:p-8 font-sans">
 
     <div class="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
-        <h1 class="text-3xl font-extrabold mb-8 text-gray-800 border-b pb-4 flex items-center gap-2">
-            ⚽ Gerador de Relatórios: Ed. Física
-        </h1>
+        <h1 class="text-3xl font-extrabold mb-8 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
 
         <!-- PAINEL DE ADIÇÃO -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-            <!-- Individual -->
             <div class="bg-indigo-50 p-5 rounded-xl border border-indigo-100">
-                <h2 class="font-bold text-indigo-800 mb-4 flex items-center gap-2">👤 Cadastro Individual</h2>
+                <h2 class="font-bold text-indigo-800 mb-4">👤 Cadastro Individual</h2>
                 <div class="space-y-3">
                     <input type="text" id="nomeInd" placeholder="Nome Completo do Aluno" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
                     <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
                     <div class="grid grid-cols-2 gap-3">
-                        <select id="generoInd" class="p-2.5 border rounded-lg bg-white outline-none">
-                            <option value="masc">Masculino</option>
-                            <option value="fem">Feminino</option>
-                        </select>
+                        <select id="generoInd" class="p-2.5 border rounded-lg bg-white outline-none"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
                         <select id="perfilInd" class="p-2.5 border rounded-lg bg-white outline-none">
-                            <option value="participativo">Participativo</option>
-                            <option value="pouco_participativo">Pouco participativo</option>
-                            <option value="agitado">Agitado</option>
-                            <option value="melhorar">Precisa melhorar</option>
+                            <option value="participativo">Participativo</option><option value="pouco_participativo">Pouco participativo</option>
+                            <option value="agitado">Agitado</option><option value="melhorar">Precisa melhorar</option>
                         </select>
                     </div>
                     <div class="flex items-center gap-3">
-                        <label class="text-sm text-indigo-700 font-medium">Foto:</label>
-                        <input type="file" id="fotoInd" accept="image/*" capture="environment" class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer">
+                        <label class="text-sm text-indigo-700 font-medium">Foto (Webcam/Arq):</label>
+                        <input type="file" id="fotoInd" accept="image/*" capture="user" class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-indigo-600 file:text-white cursor-pointer">
                     </div>
                     <button onclick="adicionarAluno()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition">Salvar Aluno</button>
                 </div>
             </div>
             
-            <!-- Massa -->
             <div class="bg-emerald-50 p-5 rounded-xl border border-emerald-100">
-                <h2 class="font-bold text-emerald-800 mb-4 flex items-center gap-2">📑 Importar Lista (Massa)</h2>
-                <textarea id="bulkAlunos" placeholder="Cole os nomes dos alunos aqui, um por linha..." class="w-full p-2.5 border rounded-lg h-28 mb-3 outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
+                <h2 class="font-bold text-emerald-800 mb-4">📑 Importar Lista (Massa)</h2>
+                <textarea id="bulkAlunos" placeholder="Cole os nomes dos alunos aqui, um por linha..." class="w-full p-2.5 border rounded-lg h-28 mb-3 outline-none"></textarea>
                 <input type="text" id="turmaBulk" placeholder="Qual a turma destes alunos?" class="w-full p-2.5 border rounded-lg mb-3 outline-none">
                 <button onclick="adicionarMassa()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
             </div>
         </div>
 
-        <!-- ABAS POR TURMA -->
-        <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto"></div>
+        <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
 
-        <!-- TABELA DE CONTROLE -->
-        <div class="overflow-x-auto bg-white rounded-xl border">
+        <div class="overflow-x-auto">
             <table class="w-full text-left">
                 <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
-                    <tr>
-                        <th class="p-4">Foto</th>
-                        <th class="p-4">Nome</th>
-                        <th class="p-4">Gênero</th>
-                        <th class="p-4">Perfil</th>
-                        <th class="p-4 text-center">Ações</th>
-                    </tr>
+                    <tr><th class="p-4">Foto</th><th class="p-4">Nome</th><th class="p-4">Gên</th><th class="p-4">Perfil</th><th class="p-4 text-center">Ações</th></tr>
                 </thead>
                 <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
             </table>
         </div>
         
         <div class="mt-6 flex justify-end">
-            <button onclick="gerarTurmaToda()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">
-                Gerar Relatórios da Turma Atual
-            </button>
+            <button onclick="gerarTurmaToda()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Gerar Relatórios da Turma Atual</button>
         </div>
     </div>
 
@@ -86,38 +65,21 @@
     <div id="resultado" class="max-w-4xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border">
         <div class="flex justify-between items-center mb-8 no-print border-b pb-4">
             <h2 class="text-2xl font-bold text-gray-800">Relatórios Gerados</h2>
-            <div class="flex gap-2">
-                <button onclick="limparRelatorios()" class="text-red-500 font-medium px-4 py-2 hover:bg-red-50 rounded-lg">Limpar Tudo</button>
-                <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
-            </div>
+            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold no-print">Imprimir / PDF</button>
         </div>
-        <div id="listaRelatorios" class="space-y-8">
-            <!-- Relatórios aparecerão aqui -->
-        </div>
+        <div id="listaRelatorios" class="space-y-8"></div>
     </div>
 
     <script>
         let alunos = [];
         let turmaAtiva = "";
-        let relatoriosNaTela = {}; // ID Aluno -> HTML
+        let relatoriosSalvos = {};
 
-        const textosPedagogicos = {
-            participativo: {
-                masc: "apresenta um excelente desempenho motor e um engajamento exemplar em nossas aulas práticas. Demonstra grande entusiasmo em todas as modalidades esportivas trabalhadas, respeitando rigorosamente as regras e incentivando o jogo limpo entre os colegas. Sua coordenação motora fina e grossa está em pleno desenvolvimento, destacando-se pela agilidade e espírito de liderança positiva dentro de sua equipe.",
-                fem: "apresenta um excelente desempenho motor e um engajamento exemplar em nossas aulas práticas. Demonstra grande entusiasmo em todas as modalidades esportivas trabalhadas, respeitando rigorosamente as regras e incentivando o jogo limpo entre as colegas. Sua coordenação motora fina e grossa está em pleno desenvolvimento, destacando-se pela agilidade e espírito de liderança positiva dentro de sua equipe."
-            },
-            pouco_participativo: {
-                masc: "é um aluno atento e observador durante as atividades em quadra. Embora possua um perfil mais reservado nas práticas coletivas, demonstra grande cuidado na execução dos exercícios individuais. Estamos trabalhando para ampliar sua confiança e encorajá-lo a explorar novas vivências esportivas, respeitando sempre o seu ritmo de interação e garantindo que ele se sinta seguro e acolhido pelo grupo.",
-                fem: "é uma aluna atenta e observadora durante as atividades em quadra. Embora possua um perfil mais reservado nas práticas coletivas, demonstra grande cuidado na execução das atividades individuais. Estamos trabalhando para ampliar sua confiança e encorajá-la a explorar novas vivências esportivas, respeitando sempre o seu ritmo de interação e garantindo que ela se sinta segura e acolhida pelo grupo."
-            },
-            agitado: {
-                masc: "possui uma energia admirável e muita vivacidade, características que trazem uma dinâmica muito positiva às nossas aulas. Trabalhamos para canalizar esse entusiasmo para a precisão dos movimentos técnicos e para o entendimento tático dos jogos. É visível sua evolução na autorregulação e no foco durante as instruções, demonstrando um potencial motor promissor.",
-                fem: "possui uma energia admirável e muita vivacidade, características que trazem uma dinâmica muito positiva às nossas aulas. Trabalhamos para canalizar esse entusiasmo para a precisão dos movimentos técnicos e para o entendimento tático dos jogos. É visível sua evolução na autorregulação e no foco durante as instruções, demonstrando um potencial motor promissor."
-            },
-            melhorar: {
-                masc: "tem se mostrado interessado e esforçado em superar seus desafios motores. Nosso foco pedagógico está voltado para o fortalecimento de sua lateralidade e equilíbrio corporal. Com persistência e o apoio constante que tem recebido, estamos observando pequenos e valiosos avanços em sua autoconfiança durante as práticas, o que certamente resultará em um desenvolvimento físico sólido.",
-                fem: "tem se mostrado interessada e esforçada em superar seus desafios motores. Nosso foco pedagógico está voltado para o fortalecimento de sua lateralidade e equilíbrio corporal. Com persistência e o apoio constante que tem recebido, estamos observando pequenos e valiosos avanços em sua autoconfiança durante as práticas, o que certamente resultará em um desenvolvimento físico sólido."
-            }
+        const frasesLongas = {
+            participativo: { masc: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "Demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
+            pouco_participativo: { masc: "Nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", fem: "Nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo." },
+            agitado: { masc: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "Possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
+            melhorar: { masc: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "Tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
         };
 
         function adicionarAluno() {
@@ -126,104 +88,44 @@
             if(!nome || !turma) return alert("Preencha nome e turma!");
 
             const fotoInput = document.getElementById("fotoInd");
-            let fotoBase64 = "";
-
             if (fotoInput.files && fotoInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    finalizarCadastro(nome, turma, e.target.result);
-                };
+                reader.onload = e => finalizarCadastro(nome, turma, e.target.result);
                 reader.readAsDataURL(fotoInput.files[0]);
-            } else {
-                finalizarCadastro(nome, turma, "");
-            }
+            } else { finalizarCadastro(nome, turma, ""); }
         }
 
         function finalizarCadastro(nome, turma, foto) {
-            alunos.push({
-                id: Date.now() + Math.random(),
-                nome: nome.trim(),
-                turma: turma.trim(),
-                genero: document.getElementById("generoInd").value,
-                perfil: document.getElementById("perfilInd").value,
-                foto: foto
-            });
+            alunos.push({ id: Date.now() + Math.random(), nome, turma, foto, genero: document.getElementById("generoInd").value, perfil: document.getElementById("perfilInd").value });
             turmaAtiva = turma;
-            limparForm();
             atualizarInterface();
         }
 
         function adicionarMassa() {
-            const nomes = document.getElementById("bulkAlunos").value.split('\n');
+            const bulkText = document.getElementById("bulkAlunos").value;
             const turma = document.getElementById("turmaBulk").value;
-            if(!nomes[0] || !turma) return alert("Preencha os nomes e a turma!");
-
-            nomes.forEach(n => {
-                if(n.trim()) {
-                    alunos.push({
-                        id: Date.now() + Math.random(),
-                        nome: n.trim(),
-                        turma: turma.trim(),
-                        genero: "masc",
-                        perfil: "participativo",
-                        foto: ""
-                    });
-                }
+            if(!bulkText || !turma) return alert("Preencha os campos!");
+            bulkText.split('\n').forEach(n => {
+                if(n.trim()) alunos.push({ id: Date.now() + Math.random(), nome: n.trim(), turma, genero: 'masc', perfil: 'participativo', foto: "" });
             });
             turmaAtiva = turma;
-            document.getElementById("bulkAlunos").value = "";
             atualizarInterface();
-        }
-
-        function trocarFoto(input, id) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const aluno = alunos.find(a => a.id === id);
-                    aluno.foto = e.target.result;
-                    atualizarInterface();
-                    if(relatoriosNaTela[id]) gerarIndividual(id); // Atualiza foto no relatório se já existir
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
         }
 
         function atualizarInterface() {
             const containerAbas = document.getElementById("abasContainer");
-            const turmas = [...new Set(alunos.map(a => a.turma))];
-            
+            const turmas = [...new Set(alunos.map(a => a.turma))].sort();
             if(!turmaAtiva && turmas.length > 0) turmaAtiva = turmas[0];
-
-            containerAbas.innerHTML = turmas.map(t => `
-                <button onclick="mudarTurma('${t}')" class="pb-2 px-4 text-sm transition ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400 hover:text-gray-600'}">
-                    ${t}
-                </button>
-            `).join('');
+            
+            containerAbas.innerHTML = turmas.map(t => `<button onclick="mudarTurma('${t}')" class="pb-2 px-4 text-sm transition ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400 hover:text-gray-600'}">${t}</button>`).join('');
 
             const tbody = document.getElementById("tabelaAlunos");
-            tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).map(a => `
+            tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome)).map(a => `
                 <tr>
-                    <td class="p-4">
-                        <label class="relative block w-[60px]">
-                            <img src="${a.foto || 'https://via.placeholder.com/60?text=+'}" class="foto-preview">
-                            <input type="file" class="hidden" accept="image/*" capture="environment" onchange="trocarFoto(this, ${a.id})">
-                        </label>
-                    </td>
+                    <td class="p-4"><label><img src="${a.foto || 'https://via.placeholder.com/60?text=+'}" class="foto-preview"><input type="file" class="hidden" accept="image/*" capture="user" onchange="trocarFoto(this, ${a.id})"></label></td>
                     <td class="p-4 font-bold text-gray-700">${a.nome}</td>
-                    <td class="p-4">
-                        <select onchange="mudarDado(${a.id}, 'genero', this.value)" class="p-1 border rounded bg-white">
-                            <option value="masc" ${a.genero==='masc'?'selected':''}>Masc</option>
-                            <option value="fem" ${a.genero==='fem'?'selected':''}>Fem</option>
-                        </select>
-                    </td>
-                    <td class="p-4">
-                        <select onchange="mudarDado(${a.id}, 'perfil', this.value)" class="p-1 border rounded bg-white w-full">
-                            <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
-                            <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
-                            <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
-                            <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
-                        </select>
-                    </td>
+                    <td class="p-4"><select onchange="mudarDado(${a.id}, 'genero', this.value)" class="p-1 border rounded bg-white"><option value="masc" ${a.genero==='masc'?'selected':''}>Masc</option><option value="fem" ${a.genero==='fem'?'selected':''}>Fem</option></select></td>
+                    <td class="p-4"><select onchange="mudarDado(${a.id}, 'perfil', this.value)" class="p-1 border rounded bg-white w-full">${Object.keys(frasesLongas).map(p => `<option value="${p}" ${a.perfil===p?'selected':''}>${p.replace('_',' ')}</option>`).join('')}</select></td>
                     <td class="p-4 text-center space-x-2">
                         <button onclick="gerarIndividual(${a.id})" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">GERAR</button>
                         <button onclick="removerAluno(${a.id})" class="text-red-500 hover:bg-red-50 p-1.5 rounded">✕</button>
@@ -232,51 +134,42 @@
             `).join('');
         }
 
-        function mudarDado(id, campo, valor) {
-            const aluno = alunos.find(a => a.id === id);
-            aluno[campo] = valor;
-        }
-
+        function mudarDado(id, campo, valor) { alunos.find(a => a.id === id)[campo] = valor; }
         function mudarTurma(t) { turmaAtiva = t; atualizarInterface(); }
+        function trocarFoto(input, id) {
+            const reader = new FileReader();
+            reader.onload = e => { alunos.find(a => a.id === id).foto = e.target.result; atualizarInterface(); atualizarRelatorios(); };
+            reader.readAsDataURL(input.files[0]);
+        }
 
         function gerarIndividual(id) {
             const a = alunos.find(al => al.id === id);
-            const baseTexto = textosPedagogicos[a.perfil][a.genero];
-            const header = a.genero === 'masc' ? 'O aluno' : 'A aluna';
-            
-            relatoriosNaTela[id] = `
-                <div class="flex flex-col md:flex-row gap-6 p-6 bg-gray-50 rounded-2xl border-l-8 border-indigo-500 relative group">
-                    <button onclick="removerRelatorio(${id})" class="no-print absolute top-4 right-4 text-gray-300 hover:text-red-500 transition">✕ Remover</button>
+            relatoriosSalvos[id] = `
+                <div id="rel-${id}" class="flex flex-col md:flex-row gap-6 p-6 bg-gray-50 rounded-2xl border-l-8 border-indigo-500 relative">
+                    <button onclick="delete relatoriosSalvos[${id}]; atualizarRelatorios()" class="no-print absolute top-4 right-4 text-gray-300 hover:text-red-500">✕ Remover</button>
                     ${a.foto ? `<img src="${a.foto}" class="w-32 h-32 rounded-xl object-cover shadow-md">` : ''}
                     <div class="flex-1">
                         <h4 class="text-lg font-black text-indigo-900 mb-2">${a.nome.toUpperCase()}</h4>
-                        <p class="text-sm font-bold text-gray-500 mb-4 tracking-widest uppercase">Educação Física | Turma: ${a.turma}</p>
-                        <p class="text-gray-700 leading-relaxed text-justify">
-                            Prezados responsáveis, informamos que <strong>${a.nome}</strong> ${baseTexto} Seguimos à disposição para continuarmos incentivando seu desenvolvimento integral.
-                        </p>
+                        <p class="text-xs font-bold text-gray-400 mb-4 tracking-widest uppercase">${a.turma}</p>
+                        <p class="text-gray-700 leading-relaxed text-justify">${a.genero==='masc'?'O aluno':'A aluna'} ${frasesLongas[a.perfil][a.genero]}</p>
                     </div>
                 </div>
             `;
-            desenharRelatorios();
+            atualizarRelatorios();
         }
 
-        function gerarTurmaToda() {
-            alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id));
+        function gerarTurmaToda() { alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id)); }
+
+        function atualizarRelatorios() {
+            const container = document.getElementById("listaRelatorios");
+            // Filtra os IDs que pertencem à turma ativa e ordena
+            const idsTurmaAtiva = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
+            container.innerHTML = Object.keys(relatoriosSalvos)
+                .filter(id => idsTurmaAtiva.includes(parseFloat(id)))
+                .map(id => relatoriosSalvos[id]).join('');
         }
 
-        function desenharRelatorios() {
-            document.getElementById("listaRelatorios").innerHTML = Object.values(relatoriosNaTela).join('');
-        }
-
-        function removerRelatorio(id) { delete relatoriosNaTela[id]; desenharRelatorios(); }
-        function limparRelatorios() { relatoriosNaTela = {}; desenharRelatorios(); }
-        function limparForm() { document.getElementById("nomeInd").value = ""; document.getElementById("fotoInd").value = ""; }
-        function removerAluno(id) { 
-            alunos = alunos.filter(a => a.id !== id); 
-            delete relatoriosNaTela[id];
-            atualizarInterface(); 
-            desenharRelatorios();
-        }
+        function removerAluno(id) { delete relatoriosSalvos[id]; alunos = alunos.filter(a => a.id !== id); atualizarInterface(); atualizarRelatorios(); }
     </script>
 </body>
 </html>
