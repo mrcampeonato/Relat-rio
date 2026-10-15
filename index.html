@@ -10,12 +10,13 @@
     <style>
         @media print { .no-print { display: none; } }
         .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
-        .foto-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; }
+        .foto-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+        .foto-preview:hover { border-color: #4f46e5; transform: scale(1.05); }
     </style>
 </head>
 <body class="bg-gray-50 p-2 md:p-6 font-sans">
 
-    <div class="max-w-5xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border no-print">
+    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border no-print">
         <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
 
         <!-- PAINEL DE CADASTRO -->
@@ -56,6 +57,8 @@
                     <tr>
                         <th class="p-3">Foto</th>
                         <th class="p-3">Nome</th>
+                        <th class="p-3">Perfil</th>
+                        <th class="p-3">Turma</th>
                         <th class="p-3 text-center">Ações</th>
                     </tr>
                 </thead>
@@ -83,7 +86,7 @@
 
         let alunos = [];
         let turmaAtiva = "";
-        let relatoriosSalvosMap = {}; // ID do aluno -> texto do relatório
+        let relatoriosSalvosMap = {};
 
         const frasesLongas = {
             participativo: { masc: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
@@ -113,8 +116,7 @@
             const nome = document.getElementById('nomeInd').value.trim();
             const turma = document.getElementById('turmaInd').value.trim();
             if (!nome || !turma) return alert("Preencha Nome e Turma!");
-            const novo = { nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value, foto_url: "" };
-            const { error } = await sb.from('alunos').insert([novo]);
+            const { error } = await sb.from('alunos').insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value }]);
             if (error) return alert("Erro: " + error.message);
             document.getElementById('nomeInd').value = "";
             carregar();
@@ -128,6 +130,13 @@
             await sb.from('alunos').insert(novos);
             document.getElementById('bulkAlunos').value = "";
             carregar();
+        }
+
+        async function atualizarDado(id, campo, valor) {
+            const { error } = await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
+            if (error) alert("Erro ao atualizar: " + error.message);
+            // Se mudar a turma, precisamos atualizar as abas
+            if (campo === 'turma') carregar(); 
         }
 
         async function alterarFoto(input, id) {
@@ -171,6 +180,17 @@
                         </label>
                     </td>
                     <td class="p-3 font-bold text-gray-700">${a.nome}</td>
+                    <td class="p-3">
+                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full">
+                            <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
+                            <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
+                            <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
+                            <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
+                        </select>
+                    </td>
+                    <td class="p-3">
+                        <input type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value)" class="p-1 border rounded w-24 text-xs">
+                    </td>
                     <td class="p-3 flex justify-center gap-2">
                         <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold">GERAR</button>
                         <button onclick="remover('${a.id}')" class="text-red-500">✕</button>
@@ -182,10 +202,7 @@
         async function gerarIndividual(id) {
             const a = alunos.find(al => al.id === id);
             const textoFinal = `${a.nome} ${frasesLongas[a.perfil][a.genero]}`;
-            
-            // Salvar no Banco
             await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
-            
             relatoriosSalvosMap[id] = textoFinal;
             renderRelatorios();
         }
@@ -210,7 +227,7 @@
                 container.innerHTML = filtrados.map(a => `
                     <div class="flex gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
                         <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 text-gray-400 hover:text-red-500">✕</button>
-                        ${a.foto_url ? `<img src="${a.foto_url}" class="w-20 h-20 rounded-lg object-cover">` : ''}
+                        ${a.foto_url ? `<img src="${a.foto_url}" class="w-20 h-20 rounded-lg object-cover shadow-sm">` : ''}
                         <div>
                             <p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${a.turma})</p>
                             <p class="text-gray-700 text-sm mt-1">${relatoriosSalvosMap[a.id]}</p>
