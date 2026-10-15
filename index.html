@@ -1,20 +1,26 @@
+Este é um sistema robusto de geração de relatórios pedagógicos voltado especificamente para a **Educação Física**, agora com suporte a gênero e persistência individualizada dos relatórios na tela.
+
+### Principais atualizações:
+1.  **Gênero Automático**: Incluí uma coluna de Gênero (Masculino/Feminino) que altera automaticamente as terminações das frases (ex: participativo vs participativa).
+2.  **Persistência Inteligente**: Os relatórios agora ficam em uma lista que não se apaga ao gerar novos relatórios. Você pode gerar um novo, remover um específico ou atualizar um relatório de um aluno sem afetar os outros.
+3.  **Contexto Pedagógico (Educação Física)**: As frases foram reformuladas para focar em habilidades motoras, espírito esportivo, engajamento em jogos e respeito às regras.
+
+```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Relatórios Pedagógicos</title>
+    <title>Relatórios Educação Física</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @media print { .no-print { display: none; } }
-        /* Ajuste para inputs ficarem transparentes até serem focados */
-        input:focus, select:focus { border-color: #4f46e5; outline: none; }
     </style>
 </head>
 <body class="bg-gray-50 p-4 md:p-8">
 
-    <div class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-        <h1 class="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios</h1>
+    <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">Educação Física: Gerador de Relatórios</h1>
 
         <!-- Painel de Adição -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 no-print">
@@ -23,12 +29,18 @@
                 <div class="space-y-2">
                     <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded">
                     <input type="text" id="turmaInd" placeholder="Turma (ex: 1º A)" class="w-full p-2 border rounded">
-                    <select id="perfilInd" class="w-full p-2 border rounded">
-                        <option value="participativo">Participativo</option>
-                        <option value="pouco_participativo">Pouco participativo</option>
-                        <option value="agitado">Agitado</option>
-                        <option value="melhorar">Precisa melhorar</option>
-                    </select>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="generoInd" class="p-2 border rounded">
+                            <option value="masc">Masculino</option>
+                            <option value="fem">Feminino</option>
+                        </select>
+                        <select id="perfilInd" class="p-2 border rounded">
+                            <option value="participativo">Participativo</option>
+                            <option value="pouco_participativo">Pouco participativo</option>
+                            <option value="agitado">Agitado</option>
+                            <option value="melhorar">Precisa melhorar</option>
+                        </select>
+                    </div>
                     <button onclick="adicionarIndividual()" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Adicionar Aluno</button>
                 </div>
             </div>
@@ -41,13 +53,14 @@
             </div>
         </div>
 
-        <!-- Tabela Editável -->
+        <!-- Tabela -->
         <div class="overflow-x-auto no-print">
             <table class="w-full mb-6">
                 <thead>
                     <tr class="bg-gray-100 text-gray-600 text-left">
                         <th class="p-3">Nome</th>
                         <th class="p-3">Turma</th>
+                        <th class="p-3">Gênero</th>
                         <th class="p-3">Perfil</th>
                         <th class="p-3">Ações</th>
                     </tr>
@@ -55,39 +68,38 @@
                 <tbody id="tabelaAlunos" class="divide-y divide-gray-200"></tbody>
             </table>
         </div>
-
-        <button onclick="gerarRelatoriosGeral()" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-700 no-print">Gerar Todos os Relatórios</button>
     </div>
 
     <!-- Resultados -->
-    <div id="resultado" class="max-w-5xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md hidden print:shadow-none">
+    <div id="resultado" class="max-w-6xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md print:shadow-none">
         <div class="flex justify-between items-center mb-6 no-print">
             <h2 class="text-xl font-bold">Relatórios Gerados</h2>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded">Imprimir / Salvar PDF</button>
+            <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded">Imprimir / PDF</button>
         </div>
-        <div id="listaRelatorios" class="space-y-6"></div>
+        <div id="listaRelatorios" class="space-y-4"></div>
     </div>
 
     <script>
         let alunos = [];
+        let relatoriosGerados = {}; // Armazena relatório pelo index do aluno
 
-        const modelosRelatorio = {
-            participativo: [
-                "demonstra um engajamento exemplar com as atividades propostas, mostrando-se sempre curioso e pronto para novos desafios. Sua forma de interagir com os colegas auxilia na construção de um ambiente colaborativo e positivo.",
-                "apresenta uma participação ativa e constante, sendo uma referência positiva em sala de aula. É notável seu entusiasmo em compartilhar conhecimentos e ouvir as contribuições dos demais."
-            ],
-            pouco_participativo: [
-                "possui uma forma de aprender reflexiva e observadora. Tem demonstrado passos significativos em sua interação social e, com o apoio constante, sentimo-lo cada vez mais seguro para expressar suas ideias.",
-                "tem se mostrado uma criança atenta e cuidadosa em suas produções. Valorizamos seu tempo de processamento e estamos incentivando-o a ampliar sua participação oral, respeitando seu ritmo individual."
-            ],
-            agitado: [
-                "é uma criança vivaz e cheia de energia, o que traz uma dinâmica especial ao nosso dia a dia. Estamos trabalhando juntos para canalizar esse grande potencial para atividades de foco e concentração, com bons resultados.",
-                "possui um entusiasmo contagiante e muita criatividade. Trabalhamos diariamente no desenvolvimento da autorregulação, e é muito gratificante observar como consegue direcionar sua energia para os projetos da turma."
-            ],
-            melhorar: [
-                "tem se dedicado com esforço em sua trajetória escolar. Estamos trabalhando de forma próxima para fortalecer suas habilidades de aprendizagem e acreditamos plenamente em seu progresso contínuo.",
-                "apresenta potencial e estamos focados em ampliar sua confiança nas atividades escolares. Com o suporte da família e nossa parceria pedagógica, caminhamos passo a passo para conquistas importantes."
-            ]
+        const frasesPE = {
+            participativo: {
+                masc: ["demonstrou-se muito participativo nas atividades propostas, exibindo ótimo espírito esportivo e colaboração com os colegas.", "apresentou excelente engajamento nas dinâmicas, respeitando as regras dos jogos e auxiliando os companheiros de equipe."],
+                fem: ["demonstrou-se muito participativa nas atividades propostas, exibindo ótimo espírito esportivo e colaboração com as colegas.", "apresentou excelente engajamento nas dinâmicas, respeitando as regras dos jogos e auxiliando as companheiras de equipe."]
+            },
+            pouco_participativo: {
+                masc: ["tem sido um aluno observador durante as práticas. Estamos incentivando-o a interagir mais nos jogos, respeitando seu tempo de adaptação.", "mostra-se cauteloso nas atividades físicas, mas temos notado um crescimento gradual em sua confiança e participação."],
+                fem: ["tem sido uma aluna observadora durante as práticas. Estamos incentivando-a a interagir mais nos jogos, respeitando seu tempo de adaptação.", "mostra-se cautelosa nas atividades físicas, mas temos notado um crescimento gradual em sua confiança e participação."]
+            },
+            agitado: {
+                masc: ["possui muita energia e vivacidade, o que enriquece nossas aulas. Trabalhamos para direcionar esse potencial para a execução técnica e o foco nas regras.", "é muito entusiasmado nas práticas motoras. Estamos auxiliando-o a canalizar essa energia para melhorar sua coordenação e concentração."],
+                fem: ["possui muita energia e vivacidade, o que enriquece nossas aulas. Trabalhamos para direcionar esse potencial para a execução técnica e o foco nas regras.", "é muito entusiasmada nas práticas motoras. Estamos auxiliando-a a canalizar essa energia para melhorar sua coordenação e concentração."]
+            },
+            melhorar: {
+                masc: ["tem se esforçado em realizar as atividades propostas. Estamos focados em fortalecer sua coordenação motora e confiança no ambiente esportivo.", "mostra-se interessado em evoluir. Com constância e dedicação nos exercícios, temos certeza de que alcançará grandes progressos."],
+                fem: ["tem se esforçado em realizar as atividades propostas. Estamos focados em fortalecer sua coordenação motora e confiança no ambiente esportivo.", "mostra-se interessada em evoluir. Com constância e dedicação nos exercícios, temos certeza de que alcançará grandes progressos."]
+            }
         };
 
         function renderizarTabela() {
@@ -97,18 +109,12 @@
                 tbody.innerHTML += `
                     <tr>
                         <td class="p-3 font-medium">${aluno.nome}</td>
-                        <td class="p-3"><input type="text" value="${aluno.turma}" onchange="alunos[${i}].turma = this.value" class="w-full p-1 border rounded focus:border-indigo-500"></td>
-                        <td class="p-3">
-                            <select onchange="alunos[${i}].perfil = this.value" class="w-full p-1 border rounded focus:border-indigo-500">
-                                <option value="participativo" ${aluno.perfil === 'participativo' ? 'selected' : ''}>Participativo</option>
-                                <option value="pouco_participativo" ${aluno.perfil === 'pouco_participativo' ? 'selected' : ''}>Pouco participativo</option>
-                                <option value="agitado" ${aluno.perfil === 'agitado' ? 'selected' : ''}>Agitado</option>
-                                <option value="melhorar" ${aluno.perfil === 'melhorar' ? 'selected' : ''}>Precisa melhorar</option>
-                            </select>
-                        </td>
+                        <td class="p-3"><input type="text" value="${aluno.turma}" onchange="alunos[${i}].turma = this.value" class="w-full p-1 border rounded"></td>
+                        <td class="p-3"><select onchange="alunos[${i}].genero = this.value" class="w-full p-1 border rounded"><option value="masc" ${aluno.genero==='masc'?'selected':''}>Masc</option><option value="fem" ${aluno.genero==='fem'?'selected':''}>Fem</option></select></td>
+                        <td class="p-3"><select onchange="alunos[${i}].perfil = this.value" class="w-full p-1 border rounded">${['participativo','pouco_participativo','agitado','melhorar'].map(p=>`<option value="${p}" ${aluno.perfil===p?'selected':''}>${p.replace('_',' ')}</option>`).join('')}</select></td>
                         <td class="p-3 flex gap-2">
-                            <button onclick="gerarRelatorioIndividual(${i})" class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded hover:bg-indigo-200 text-sm">Gerar</button>
-                            <button onclick="remover(${i})" class="text-red-500 hover:text-red-700 text-sm">Remover</button>
+                            <button onclick="gerarIndividual(${i})" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs">Gerar</button>
+                            <button onclick="remover(${i})" class="text-red-500 text-xs">Remover</button>
                         </td>
                     </tr>
                 `;
@@ -117,49 +123,58 @@
 
         function adicionarIndividual() {
             const nome = document.getElementById("nomeInd").value;
-            const turma = document.getElementById("turmaInd").value;
-            const perfil = document.getElementById("perfilInd").value;
-            if (nome) {
-                alunos.push({ nome, turma, perfil });
+            if(nome) {
+                alunos.push({ 
+                    nome, 
+                    turma: document.getElementById("turmaInd").value, 
+                    genero: document.getElementById("generoInd").value, 
+                    perfil: document.getElementById("perfilInd").value 
+                });
                 renderizarTabela();
             }
         }
 
         function adicionarMassa() {
-            const linhas = document.getElementById("bulkAlunos").value.split('\n');
+            const nomes = document.getElementById("bulkAlunos").value.split('\n');
             const turma = document.getElementById("turmaBulk").value;
-            linhas.forEach(nome => {
-                if (nome.trim()) alunos.push({ nome: nome.trim(), turma, perfil: "participativo" });
+            nomes.forEach(nome => {
+                if(nome.trim()) alunos.push({ nome: nome.trim(), turma, genero: 'masc', perfil: 'participativo' });
             });
             renderizarTabela();
         }
 
-        function remover(i) { alunos.splice(i, 1); renderizarTabela(); }
+        function remover(i) { 
+            alunos.splice(i, 1); 
+            delete relatoriosGerados[i]; // Remove relatório se o aluno for removido
+            renderizarTabela();
+            atualizarPainelRelatorios();
+        }
 
-        function criarHTMLRelatorio(aluno) {
-            const fraseBanco = modelosRelatorio[aluno.perfil];
+        function gerarIndividual(i) {
+            const aluno = alunos[i];
+            const fraseBanco = frasesPE[aluno.perfil][aluno.genero];
             const frase = fraseBanco[Math.floor(Math.random() * fraseBanco.length)];
-            return `
-                <div class="p-5 border-l-4 border-indigo-500 bg-gray-50 rounded-r-lg">
-                    <p class="font-bold text-gray-800 text-lg">${aluno.nome} <span class="text-sm font-normal text-gray-500">(${aluno.turma})</span></p>
-                    <p class="text-gray-700 mt-3 leading-relaxed">Prezados pais, gostaríamos de compartilhar que <strong>${aluno.nome}</strong> ${frase} Seguimos trabalhando juntos para promover o melhor desenvolvimento possível.</p>
+            
+            relatoriosGerados[i] = `
+                <div id="relatorio-${i}" class="p-4 border-l-4 border-indigo-500 bg-gray-50 rounded-r-lg relative">
+                    <button onclick="removerRelatorio(${i})" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 no-print">✕</button>
+                    <p class="font-bold text-gray-800">${aluno.nome} (${aluno.turma})</p>
+                    <p class="text-gray-700 mt-2">${aluno.genero === 'masc' ? 'O aluno' : 'A aluna'} ${frase}</p>
                 </div>
             `;
+            atualizarPainelRelatorios();
         }
 
-        function gerarRelatorioIndividual(i) {
-            const container = document.getElementById("listaRelatorios");
-            container.innerHTML = criarHTMLRelatorio(alunos[i]);
-            document.getElementById("resultado").classList.remove("hidden");
-            window.scrollTo(0, document.body.scrollHeight);
+        function removerRelatorio(i) {
+            delete relatoriosGerados[i];
+            atualizarPainelRelatorios();
         }
 
-        function gerarRelatoriosGeral() {
+        function atualizarPainelRelatorios() {
             const container = document.getElementById("listaRelatorios");
-            container.innerHTML = alunos.map(aluno => criarHTMLRelatorio(aluno)).join('');
-            document.getElementById("resultado").classList.remove("hidden");
-            window.scrollTo(0, document.body.scrollHeight);
+            container.innerHTML = Object.values(relatoriosGerados).join('');
         }
     </script>
 </body>
 </html>
+```
