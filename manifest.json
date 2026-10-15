@@ -1,0 +1,15 @@
+{
+  "name": "Relatórios Ed. Física",
+  "short_name": "Relatórios EF",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3233/3233481.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
