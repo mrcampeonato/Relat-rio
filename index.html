@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
     <title>Relatórios Educação Física</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -25,14 +26,14 @@
     </div>
 
     <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
-        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
+        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4 text-center md:text-left">Gerador de Relatórios: Ed. Física</h1>
 
         <!-- CADASTRO -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
                 <h2 class="font-bold text-indigo-800">Cadastro Individual</h2>
-                <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
-                <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
+                <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg outline-none">
+                <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg outline-none">
                 <div class="grid grid-cols-2 gap-2">
                     <select id="generoInd" class="p-2 border rounded-lg bg-white"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
                     <select id="perfilInd" class="p-2 border rounded-lg bg-white">
@@ -46,7 +47,7 @@
             <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                 <h2 class="font-bold text-emerald-800 mb-2">Importar Lista (Massa)</h2>
                 <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none"></textarea>
-                <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2 outline-none">
+                <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2">
                 <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
             </div>
         </div>
@@ -63,14 +64,16 @@
                 <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
                     <tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
                 </thead>
-                <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
+                <tbody id="tabelaAlunos" class="divide-y text-sm">
+                    <tr><td colspan="4" class="p-8 text-center text-gray-400">Aguardando dados...</td></tr>
+                </tbody>
             </table>
         </div>
         <button onclick="gerarTurmaToda()" class="mt-6 w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg">Gerar Relatórios da Turma</button>
     </div>
 
     <!-- RESULTADOS -->
-    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0 print:shadow-none">
+    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0">
         <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
             <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
             <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
@@ -81,8 +84,8 @@
     <script>
         const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg'.trim();
-        
-        let sb;
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let alunos = [];
         let turmaAtiva = "";
         let relatoriosSalvosMap = {};
@@ -94,19 +97,30 @@
             melhorar: { masc: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
         };
 
-        async function init() {
-            sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            await carregar();
+        function comprimirImagem(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 300;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    callback(canvas.toDataURL('image/jpeg', 0.6));
+                };
+            };
         }
 
         async function carregar() {
-            const { data: dataAlunos, error: errA } = await sb.from('alunos').select('*').order('nome');
+            const { data: dataAlunos } = await sb.from('alunos').select('*').order('nome');
             alunos = dataAlunos || [];
-            
             const { data: dataRels } = await sb.from('relatorios').select('*');
             relatoriosSalvosMap = {};
             if (dataRels) dataRels.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
-
             if (alunos.length > 0 && !turmaAtiva) turmaAtiva = alunos[0].turma;
             renderTabs(); renderTabela(); renderRelatorios();
         }
@@ -114,10 +128,9 @@
         async function salvarIndividual() {
             const nome = document.getElementById('nomeInd').value.trim();
             const turma = document.getElementById('turmaInd').value.trim();
-            if (!nome || !turma) return alert("Preencha Nome e Turma!");
+            if (!nome || !turma) return alert("Preencha!");
             await sb.from('alunos').insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value }]);
-            document.getElementById('nomeInd').value = "";
-            await carregar();
+            document.getElementById('nomeInd').value = ""; await carregar();
         }
 
         async function salvarMassa() {
@@ -126,8 +139,7 @@
             if (!texto || !turma) return alert("Preencha!");
             const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: 'masc', perfil: 'participativo' }));
             await sb.from('alunos').insert(novos);
-            document.getElementById('bulkAlunos').value = "";
-            await carregar();
+            document.getElementById('bulkAlunos').value = ""; await carregar();
         }
 
         async function atualizarDado(id, campo, valor) {
@@ -149,7 +161,6 @@
                     </label>
                 </div>
                 <div class="mt-4 text-left">
-                    <label class="text-[10px] font-bold text-gray-400 uppercase">Nome (Toque para editar)</label>
                     <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value)" 
                         class="w-full text-2xl font-black text-indigo-900 border-b-2 border-gray-100 outline-none pb-1 bg-transparent">
                     <p class="text-sm text-gray-500 mt-2 uppercase">Turma: ${a.turma} | Perfil: ${a.perfil}</p>
@@ -162,24 +173,10 @@
 
         async function alterarFoto(input, id, doModal = false) {
             if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = async () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 300;
-                        const scaleSize = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        const base64 = canvas.toDataURL('image/jpeg', 0.6);
-                        await sb.from('alunos').update({ foto_url: base64 }).eq('id', id);
-                        if(doModal) abrirModalAluno(id);
-                        await carregar();
-                    };
-                };
-                reader.readAsDataURL(input.files[0]);
+                comprimirImagem(input.files[0], async (base64) => {
+                    await sb.from('alunos').update({ foto_url: base64 }).eq('id', id);
+                    if(doModal) abrirModalAluno(id); await carregar();
+                });
             }
         }
 
@@ -221,7 +218,7 @@
                         </select>
                     </td>
                     <td class="p-2 text-center flex justify-center gap-2">
-                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold">GERAR</button>
+                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow-md">GERAR</button>
                         <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
                     </td>
                 </tr>
@@ -253,7 +250,7 @@
 
         async function removerRelatorio(id) { await sb.from('relatorios').delete().eq('aluno_id', id); delete relatoriosSalvosMap[id]; renderRelatorios(); }
 
-        window.onload = init;
+        window.onload = carregar;
     </script>
 </body>
 </html>
