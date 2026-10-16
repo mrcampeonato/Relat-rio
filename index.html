@@ -154,8 +154,6 @@
     </main>
 
     <script>
-        /* ==========================================================================
-           COLE AQUI, do seu arquivo atual, estas 4 partes (sem alterar nada):
              const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg'.trim();
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -166,8 +164,6 @@
             agitado: { masc: ["possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", "é muito entusiasmado nas práticas motoras. Estamos auxiliando-o a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.", "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo.", "apresenta um entusiasmo constante que, quando bem direcionado, resulta em um ótimo desempenho. Estamos trabalhando o foco e a atenção aos detalhes para que essa energia seja transformada em técnica e precisão durante os jogos.", "é uma criança muito ativa e criativa. Trabalhamos para que essa vivacidade seja aliada ao aprendizado das regras e ao respeito aos limites do jogo coletivo, sempre valorizando seu alto potencial de participação."], fem: ["possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", "é muito entusiasmada nas práticas motoras. Estamos auxiliando-a a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.", "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo.", "apresenta um entusiasmo constante que, quando bem direcionado, resulta em um ótimo desempenho. Estamos trabalhando o foco e a atenção aos detalhes para que essa energia seja transformada em técnica e precisão durante os jogos.", "é uma criança muito ativa e criativa. Trabalhamos para que essa vivacidade seja aliada ao aprendizado das regras e ao respeito aos limites do jogo coletivo, sempre valorizando seu alto potencial de participação."] },
             melhorar: { masc: ["tem se dedicado com esforço em suas trajetórias nas atividades práticas. Focamos em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes.", "mostra-se interessado em evoluir e superar obstáculos. Estamos focados em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais.", "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ele desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula.", "está em uma fase de desenvolvimento de suas capacidades motoras básicas. Com paciência e exercícios adequados, estamos estimulando seu progresso e fortalecendo seu interesse pelas práticas esportivas, respeitando seu momento.", "apresenta potencial e estamos focados em ampliar sua confiança nas atividades. Com o suporte da família junto à nossa parceria pedagógica, caminhamos passo a passo para conquistas importantes no desenvolvimento de suas habilidades."], fem: ["tem se dedicado com esforço em suas trajetórias nas atividades práticas. Focamos em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes.", "mostra-se interessada em evoluir e superar obstáculos. Estamos focadas em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais.", "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ela desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula.", "está em uma fase de desenvolvimento de suas capacidades motoras básicas. Com paciência e exercícios adequados, estamos estimulando seu progresso e fortalecendo seu interesse pelas práticas esportivas, respeitando seu momento.", "apresenta potencial e estamos focadas em ampliar sua confiança nas atividades. Com o suporte da família junto à nossa parceria pedagógica, caminhamos passo a passo para conquistas importantes no desenvolvimento de suas habilidades."] }
         };
-
-           ========================================================================== */
 
         let alunos = [];
         let turmaAtiva = "";
@@ -214,36 +210,36 @@
         }
 
         function abrirModalAluno(id) {
-            const a = alunos.find(al => al.id === id);
-            document.getElementById('modalConteudo').innerHTML = `
-                <div class="relative inline-block w-full text-center">
-                    <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-56 h-56 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
-                    <label class="absolute bottom-2 right-[calc(50%-104px)] btn btn-primary btn-sm !min-h-[40px] !px-3 shadow-md" title="Trocar foto">
-                        Trocar foto <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
-                    </label>
-                </div>
-                <div class="mt-5 text-left">
-                    <label class="label" for="mNome">Nome</label>
-                    <input id="mNome" type="text" value="a.nome"onchange="atualizarDado('{a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" class="field font-semibold">
+    const a = alunos.find(al => al.id === id);
+    document.getElementById('modalConteudo').innerHTML = `
+        <div class="relative inline-block w-full text-center">
+            <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-56 h-56 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
+            <label class="absolute bottom-2 right-[calc(50%-104px)] btn btn-primary btn-sm !min-h-[40px] !px-3 shadow-md" title="Trocar foto">
+                Trocar foto <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
+            </label>
+        </div>
+        <div class="mt-5 text-left">
+            <label class="label" for="mNome">Nome</label>
+            <input id="mNome" type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" class="field font-semibold">
 
-                    <div class="grid grid-cols-2 gap-3 mt-4">
-                        <div>
-                            <label class="label" for="mTurma">Turma</label>
-                            <input id="mTurma" type="text" value="a.turma"onchange="atualizarDado('{a.id}', 'turma', this.value.trim()); abrirModalAluno('${a.id}');" class="field">
-                        </div>
-                        <div>
-                            <label class="label" for="mGenero">Gênero</label>
-                            <select id="mGenero" onchange="atualizarDado('a.id','genero',this.value);abrirModalAluno('{a.id}');" class="field">
-                                <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
-                                <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
-                            </select>
-                        </div>
-                    </div>
-                    <p class="text-sm mt-4" style="color:var(--muted)">Perfil: ${a.perfil}</p>
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <div>
+                    <label class="label" for="mTurma">Turma</label>
+                    <input id="mTurma" type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value.trim()); abrirModalAluno('${a.id}');" class="field">
                 </div>
-            `;
-            document.getElementById('modalAluno').classList.add('active');
-        }
+                <div>
+                    <label class="label" for="mGenero">Gênero</label>
+                    <select id="mGenero" onchange="atualizarDado('${a.id}', 'genero', this.value); abrirModalAluno('${a.id}');" class="field">
+                        <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
+                        <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
+                    </select>
+                </div>
+            </div>
+            <p class="text-sm mt-4" style="color:var(--muted)">Perfil: ${a.perfil}</p>
+        </div>
+    `;
+    document.getElementById('modalAluno').classList.add('active');
+}
 
         function fecharModal(e) { if (e && e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active'); }
 
@@ -297,40 +293,40 @@
         async function remover(id) { if (confirm("Excluir?")) { await sb.from('alunos').delete().eq('id', id); await carregar(turmaAtiva); } }
 
         function renderTabs() {
-            const container = document.getElementById('abasContainer');
-            const acoes = document.getElementById('acoesTurma');
-            const turmas = [...new Set(alunos.map(a => a.turma))].sort();
-            if (turmas.length > 0) {
-                acoes.classList.remove('hidden');
-                container.innerHTML = turmas.map(t => `<button role="tab" aria-selected="turmaAtiva===t"onclick="turmaAtiva='{t}'; renderTabs(); renderTabela(); renderRelatorios();" class="aba turmaAtiva===t?'aba-ativa':''">{t}</button>`).join('');
-            } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
-        }
+    const container = document.getElementById('abasContainer');
+    const acoes = document.getElementById('acoesTurma');
+    const turmas = [...new Set(alunos.map(a => a.turma))].sort();
+    if (turmas.length > 0) {
+        acoes.classList.remove('hidden');
+        container.innerHTML = turmas.map(t => `<button role="tab" aria-selected="${turmaAtiva === t}" onclick="turmaAtiva='${t}'; renderTabs(); renderTabela(); renderRelatorios();" class="aba ${turmaAtiva === t ? 'aba-ativa' : ''}">${t}</button>`).join('');
+    } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
+}
 
         function renderTabela() {
-            const tbody = document.getElementById('tabelaAlunos');
-            const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
-            if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Cadastre abaixo.</p>`; return; }
-            tbody.innerHTML = filtrados.map(a => `
-                <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
-                    <img src="${a.foto_url || SEM_FOTO}" alt="Foto de a.nome"loading="lazy"onclick="abrirModalAluno('{a.id}')" class="foto-preview">
-                    <button onclick="abrirModalAluno('a.id')"class="flex-1min-w-[140px]text-leftfont-semiboldtext-basehover:underline">{a.nome}</button>
-                    <select aria-label="Gênero de a.nome"onchange="atualizarDado('{a.id}', 'genero', this.value)" class="field field-sm w-auto">
-                        <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
-                        <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
-                    </select>
-                    <select aria-label="Perfil de a.nome"onchange="atualizarDado('{a.id}', 'perfil', this.value)" class="field field-sm w-auto">
-                        <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
-                        <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco part.</option>
-                        <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
-                        <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
-                    </select>
-                    <div class="flex gap-2 ml-auto">
-                        <button onclick="gerarIndividual('${a.id}')" class="btn btn-primary btn-sm">Gerar</button>
-                        <button onclick="remover('${a.id}')" class="btn btn-danger btn-sm" aria-label="Excluir ${a.nome}">Excluir</button>
-                    </div>
-                </div>
-            `).join('');
-        }
+    const tbody = document.getElementById('tabelaAlunos');
+    const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
+    if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Cadastre abaixo.</p>`; return; }
+    tbody.innerHTML = filtrados.map(a => `
+        <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
+            <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" loading="lazy" onclick="abrirModalAluno('${a.id}')" class="foto-preview">
+            <button onclick="abrirModalAluno('${a.id}')" class="flex-1 min-w-[140px] text-left font-semibold text-base hover:underline">${a.nome}</button>
+            <select aria-label="Gênero de ${a.nome}" onchange="atualizarDado('${a.id}', 'genero', this.value)" class="field field-sm w-auto">
+                <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
+                <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
+            </select>
+            <select aria-label="Perfil de ${a.nome}" onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="field field-sm w-auto">
+                <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
+                <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco part.</option>
+                <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
+                <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
+            </select>
+            <div class="flex gap-2 ml-auto">
+                <button onclick="gerarIndividual('${a.id}')" class="btn btn-primary btn-sm">Gerar</button>
+                <button onclick="remover('${a.id}')" class="btn btn-danger btn-sm" aria-label="Excluir ${a.nome}">Excluir</button>
+            </div>
+        </div>
+    `).join('');
+}
 
         async function gerarIndividual(id) {
             const a = alunos.find(al => al.id === id);
@@ -346,23 +342,23 @@
 
         function gerarTurmaToda() { alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id)); }
 
-        function renderRelatorios() {
-            const area = document.getElementById('resultadoArea');
-            const container = document.getElementById('listaRelatorios');
+       function renderRelatorios() {
+    const area = document.getElementById('resultadoArea');
+    const container = document.getElementById('listaRelatorios');
 
-            const filtrados = alunos
-                .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
-                .sort((a, b) => a.nome.localeCompare(b.nome));
+    const filtrados = alunos
+        .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+        .sort((a, b) => a.nome.localeCompare(b.nome));
 
-            const html = filtrados.map(a => {
-                return `<article class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 rounded-2xl border relative" style="background:var(--bg);border-color:var(--line)">
-                    <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200" aria-label="Remover relatório de ${a.nome}">✕</button>
-                    ${a.foto_url ? `<img src="${a.foto_url}" alt="Foto de ${a.nome}" loading="lazy" class="w-24 h-24 rounded-2xl object-cover bg-white flex-shrink-0">` : ''}
-                    <div class="flex-1 text-center md:text-justify"><p class="font-display font-semibold">a.nome.toUpperCase()({turmaAtiva})</p><p class="text-sm mt-1 leading-relaxed" style="color:#2d3748">${relatoriosSalvosMap[a.id]}</p></div></article>`;
-            }).join('');
+    const html = filtrados.map(a => {
+        return `<article class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 rounded-2xl border relative" style="background:var(--bg);border-color:var(--line)">
+            <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200" aria-label="Remover relatório de ${a.nome}">✕</button>
+            ${a.foto_url ? `<img src="${a.foto_url}" alt="Foto de ${a.nome}" loading="lazy" class="w-24 h-24 rounded-2xl object-cover bg-white flex-shrink-0">` : ''}
+            <div class="flex-1 text-center md:text-justify"><p class="font-display font-semibold">${a.nome.toUpperCase()} (${turmaAtiva})</p><p class="text-sm mt-1 leading-relaxed" style="color:#2d3748">${relatoriosSalvosMap[a.id]}</p></div></article>`;
+    }).join('');
 
-            if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
-        }
+    if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
+}
 
         async function removerRelatorio(id) { await sb.from('relatorios').delete().eq('aluno_id', id); delete relatoriosSalvosMap[id]; renderRelatorios(); }
 
