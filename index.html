@@ -257,17 +257,34 @@
     await carregar(turma);
     mostrarToast('Aluno cadastrado com sucesso!');
 }
+// INÍCIO GÊNERO
+const NOMES_FEM = new Set(['ingrid','beatriz','isabel','raquel','rachel','miriam','mirian','carmen','nicole','ester','esther','lais','tais','thais','yasmin','yasmim','jasmin','jasmim','karen','kellen','suelen','evelyn','evelin','eloise','heloise','louise','joyce','liz','lis','luz','rute','ruth','sarah','hannah','deborah','noemi','isis','iris','maite','mel','cris','dulce','lilian','ellen','elen','helen','agnes','ines','gisele','alice','aline','eliane']);
+const NOMES_MASC = new Set(['luca','gianluca','joshua','kaua','caua','bira','jota']);
 
+function inferirGenero(nomeCompleto) {
+    const primeiro = (nomeCompleto || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/^[^a-z]+/, '')
+        .split(/\s+/)[0] || '';
+    if (NOMES_FEM.has(primeiro)) return 'fem';
+    if (NOMES_MASC.has(primeiro)) return 'masc';
+    if (/(elle|ele|ine|ane|ice|lly|ly|lyn)$/.test(primeiro)) return 'fem';
+    if (primeiro.endsWith('a')) return 'fem';
+    return 'masc';
+}
+// FIM GÊNERO
 async function salvarMassa() {
     const texto = document.getElementById('bulkAlunos').value.trim();
     const turma = document.getElementById('turmaBulk').value.trim();
     if (!texto || !turma) return mostrarToast('Preencha os nomes e a turma.');
-    const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: 'masc', perfil: 'participativo' }));
+        const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: inferirGenero(n.trim()), perfil: 'participativo' }));
     const { error } = await sb.from('alunos').insert(novos);
     if (error) return mostrarToast('Não foi possível importar. Tente de novo.');
     document.getElementById('bulkAlunos').value = ""; document.getElementById('turmaBulk').value = "";
     await carregar(turma);
-    mostrarToast(novos.length === 1 ? '1 aluno cadastrado com sucesso!' : `${novos.length} alunos cadastrados com sucesso!`);
+        const nFem = novos.filter(n => n.genero === 'fem').length;
+    mostrarToast(novos.length === 1 ? '1 aluno cadastrado. Confira o gênero.' : `${novos.length} alunos cadastrados (${nFem} fem., ${novos.length - nFem} masc.). Confira o gênero.`);
 }
 
         async function atualizarDado(id, campo, valor) {
