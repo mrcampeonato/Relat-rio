@@ -77,20 +77,21 @@
     </div>
 
     <!-- CABEÇALHO / MENU -->
-    <header class="no-print sticky top-0 z-40 bg-white/90 backdrop-blur border-b" style="border-color:var(--line)">
-        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-            <a href="#" class="font-display font-bold text-lg" style="color:var(--ink)">Ed. Física</a>
-            <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Principal">
-                <a href="#alunos" class="px-3 py-2 rounded-lg hover:bg-gray-100">Alunos</a>
-                <a href="#cadastro" onclick="abrirCadastro(event)" class="px-3 py-2 rounded-lg hover:bg-gray-100">Cadastrar</a>
-                <a href="#resultadoArea" class="px-3 py-2 rounded-lg hover:bg-gray-100">Relatórios</a>
-            </nav>
-        </div>
-    </header>
+<header class="no-print sticky top-0 z-40 bg-white/90 backdrop-blur border-b" style="border-color:var(--line)">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <a href="#" onclick="mostrarAba('alunos'); return false;" class="font-display font-bold text-lg" style="color:var(--ink)">Ed. Física</a>
+        <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Principal">
+            <button id="nav-alunos" onclick="mostrarAba('alunos')" aria-current="page" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 bg-indigo-50 text-indigo-700">Alunos</button>
+            <button id="nav-cadastro" onclick="mostrarAba('cadastro')" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100">Cadastrar</button>
+        </nav>
+    </div>
+</header>
 
-    <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12">
+<main class="max-w-5xl mx-auto px-4 py-8 md:py-12">
 
-        <!-- ALUNOS (início: título + ação principal) -->
+    <!-- AMBIENTE 1: ALUNOS + RELATÓRIOS -->
+    <div id="view-alunos" class="space-y-12">
+
         <section id="alunos" class="no-print">
             <h1 class="font-display font-bold text-3xl md:text-4xl leading-tight">Relatórios de Educação Física</h1>
             <p class="mt-2 text-base max-w-xl" style="color:var(--muted)">Escolha a turma, ajuste gênero e perfil de cada aluno e gere os relatórios.</p>
@@ -111,12 +112,23 @@
             <button onclick="gerarTurmaToda()" class="btn btn-primary w-full md:w-auto md:px-10">Gerar relatórios da turma</button>
         </div>
 
-        <!-- CADASTRO -->
-        <section id="cadastro" class="no-print hidden">
-            <h2 class="font-display font-semibold text-2xl">Cadastrar alunos</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <!-- RESULTADOS -->
+        <section id="resultadoArea" class="card p-5 md:p-8 hidden print:block print:border-0">
+            <div class="flex justify-between items-center gap-4 mb-6 no-print">
+                <h2 class="font-display font-semibold text-2xl">Relatórios gerados</h2>
+                <button onclick="window.print()" class="btn btn-ghost">Imprimir / PDF</button>
+            </div>
+            <div id="listaRelatorios" class="space-y-4"></div>
+        </section>
+    </div>
+
+    <!-- AMBIENTE 2: CADASTRO -->
+    <div id="view-cadastro" class="hidden">
+        <section id="cadastro" class="no-print">
+            <h1 class="font-display font-bold text-3xl md:text-4xl leading-tight">Cadastrar alunos</h1>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
                 <div class="card p-5 md:p-6 space-y-4">
-                    <h3 class="font-display font-semibold text-lg">Um aluno</h3>
+                    <h2 class="font-display font-semibold text-lg">Um aluno</h2>
                     <div><label class="label" for="nomeInd">Nome</label><input type="text" id="nomeInd" class="field"></div>
                     <div><label class="label" for="turmaInd">Turma (ex: 6º Ano A)</label><input type="text" id="turmaInd" class="field"></div>
                     <div class="grid grid-cols-2 gap-3">
@@ -134,23 +146,15 @@
                 </div>
 
                 <div class="card p-5 md:p-6 space-y-4">
-                    <h3 class="font-display font-semibold text-lg">Lista de alunos</h3>
+                    <h2 class="font-display font-semibold text-lg">Lista de alunos</h2>
                     <div><label class="label" for="bulkAlunos">Nomes (um por linha)</label><textarea id="bulkAlunos" class="field"></textarea></div>
                     <div><label class="label" for="turmaBulk">Turma deste grupo</label><input type="text" id="turmaBulk" class="field"></div>
                     <button onclick="salvarMassa()" class="btn btn-ghost w-full">Importar todos</button>
                 </div>
             </div>
         </section>
-
-        <!-- RESULTADOS -->
-        <section id="resultadoArea" class="card p-5 md:p-8 hidden print:block print:border-0">
-            <div class="flex justify-between items-center gap-4 mb-6 no-print">
-                <h2 class="font-display font-semibold text-2xl">Relatórios gerados</h2>
-                <button onclick="window.print()" class="btn btn-ghost">Imprimir / PDF</button>
-            </div>
-            <div id="listaRelatorios" class="space-y-4"></div>
-        </section>
-    </main>
+    </div>
+</main>
 
     <script>
              const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
@@ -241,11 +245,29 @@
 }
 
         function fecharModal(e) { if (e && e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active'); }
-function abrirCadastro(e) {
-    e.preventDefault();
-    const sec = document.getElementById('cadastro');
-    sec.classList.toggle('hidden');
-    if (!sec.classList.contains('hidden')) sec.scrollIntoView({ behavior: 'smooth' });
+function mostrarAba(nome) {
+    document.getElementById('view-alunos').classList.toggle('hidden', nome !== 'alunos');
+    document.getElementById('view-cadastro').classList.toggle('hidden', nome !== 'cadastro');
+    ['alunos', 'cadastro'].forEach(n => {
+        const b = document.getElementById('nav-' + n);
+        const ativo = n === nome;
+        b.classList.toggle('bg-indigo-50', ativo);
+        b.classList.toggle('text-indigo-700', ativo);
+        b.setAttribute('aria-current', ativo ? 'page' : 'false');
+    });
+    window.scrollTo({ top: 0 });
+}
+
+// Espera a tela terminar de se reorganizar e só então rola até o relatório
+function rolarAte(id) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const el = document.getElementById('rel-' + id);
+        if (!el) return;
+        const y = el.getBoundingClientRect().top + window.scrollY - 90;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+        el.classList.add('ring-4', 'ring-indigo-300');
+        setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-300'), 1600);
+    }));
 }
         // Reduz a foto e salva em WebP: página e banco ficam bem mais leves
         function comprimirFoto(file) {
@@ -309,7 +331,7 @@ function abrirCadastro(e) {
         function renderTabela() {
     const tbody = document.getElementById('tabelaAlunos');
     const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
-    if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Cadastre abaixo.</p>`; return; }
+    if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Novo cadastro.</p>`; return; }
     tbody.innerHTML = filtrados.map(a => `
         <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
             <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" loading="lazy" onclick="abrirModalAluno('${a.id}')" class="foto-preview">
@@ -341,15 +363,16 @@ function abrirCadastro(e) {
     await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
     relatoriosSalvosMap[id] = textoFinal;
     renderRelatorios();
-    if (rolar) {
-        const alvo = document.getElementById('rel-' + id) || document.getElementById('resultadoArea');
-        alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    if (rolar) rolarAte(id);
 }
 
 async function gerarTurmaToda() {
     await Promise.all(alunos.filter(a => a.turma === turmaAtiva).map(a => gerarIndividual(a.id, false)));
-    document.getElementById('resultadoArea').scrollIntoView({ behavior: 'smooth' });
+    const area = document.getElementById('resultadoArea');
+    if (area.classList.contains('hidden')) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        window.scrollTo({ top: area.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+    }));
 }
 
        function renderRelatorios() {
@@ -361,7 +384,7 @@ async function gerarTurmaToda() {
         .sort((a, b) => a.nome.localeCompare(b.nome));
 
     const html = filtrados.map(a => {
-        return `<article class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 rounded-2xl border relative" style="background:var(--bg);border-color:var(--line)">
+        return `<article id="rel-${a.id}" class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 rounded-2xl border relative transition-shadow" style="background:var(--bg);border-color:var(--line)">
             <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200" aria-label="Remover relatório de ${a.nome}">✕</button>
             ${a.foto_url ? `<img src="${a.foto_url}" alt="Foto de ${a.nome}" loading="lazy" class="w-24 h-24 rounded-2xl object-cover bg-white flex-shrink-0">` : ''}
             <div class="flex-1 text-center md:text-justify"><p class="font-display font-semibold">${a.nome.toUpperCase()} (${turmaAtiva})</p><p class="text-sm mt-1 leading-relaxed" style="color:#2d3748">${relatoriosSalvosMap[a.id]}</p></div></article>`;
