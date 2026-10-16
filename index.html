@@ -4,104 +4,176 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatórios Educação Física</title>
-    
+
     <!-- Configurações PWA -->
     <meta name="theme-color" content="#4f46e5">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2955/2955485.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2955/2955485.png">
-    
+
+    <!-- Fontes: Poppins (títulos) + Inter (textos) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], display: ['Poppins', 'Inter', 'sans-serif'] } } } };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <style>
-        @media print { .no-print { display: none; } }
-        .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
-        .foto-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+        :root { --ink:#14213d; --muted:#556072; --line:#e6e9f0; --bg:#f6f7fb; --brand:#4f46e5; --brand-d:#4338ca; }
+        html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+        body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; }
+        h1, h2, h3, .font-display { font-family: 'Poppins', 'Inter', sans-serif; }
+
+        /* Botões e campos */
+        .btn { min-height: 44px; padding: 0 20px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 6px 16px -6px rgba(79,70,229,.55); }
+        .btn-primary:hover { background: var(--brand-d); }
+        .btn-ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+        .btn-ghost:hover { background: #f1f3f9; }
+        .btn-danger { background: #fff; color: #b42318; border: 1px solid #f3c9c5; }
+        .btn-danger:hover { background: #fdf0ef; }
+        .btn-sm { min-height: 40px; padding: 0 14px; font-size: 13px; }
+        .field { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 15px; color: var(--ink); }
+        textarea.field { padding: 10px 12px; min-height: 96px; }
+        .field-sm { min-height: 40px; font-size: 13px; }
+        .label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+        :focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; }
+        .field:focus { border-color: var(--brand); outline: 3px solid #c7d2fe; outline-offset: 0; }
+
+        /* Cartões e abas */
+        .card { background: #fff; border: 1px solid var(--line); border-radius: 20px; }
+        .aba { min-height: 40px; padding: 0 16px; border-radius: 999px; font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--muted); background: #fff; border: 1px solid var(--line); transition: background-color .15s ease, color .15s ease; }
+        .aba:hover { background: #eef0fb; }
+        .aba-ativa { background: var(--ink); color: #fff; border-color: var(--ink); }
+        .aba-ativa:hover { background: var(--ink); }
+
+        .foto-preview { width: 52px; height: 52px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); cursor: pointer; transition: transform .15s ease; flex-shrink: 0; }
+        .foto-preview:hover { transform: scale(1.05); }
+
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(20,33,61,.6); z-index: 50; align-items: flex-end; justify-content: center; padding: 0; }
         .modal.active { display: flex; }
+        .modal-box { animation: subir .2s ease-out; max-height: 92vh; overflow-y: auto; }
+        @keyframes subir { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+        @media (min-width: 640px) { .modal { align-items: center; padding: 20px; } }
+
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+        @media print { .no-print { display: none !important; } body { background: #fff; } }
     </style>
 </head>
-<body class="bg-gray-50 p-2 md:p-8 font-sans">
+<body>
 
     <!-- MODAL DE DETALHES -->
-    <div id="modalAluno" class="modal no-print" onclick="fecharModal(event)">
-        <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+    <div id="modalAluno" class="modal no-print" onclick="fecharModal(event)" role="dialog" aria-modal="true" aria-label="Detalhes do aluno">
+        <div class="modal-box bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
             <div id="modalConteudo"></div>
-            <button onclick="document.getElementById('modalAluno').classList.remove('active')" class="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-bold">Fechar e Salvar</button>
+            <button onclick="document.getElementById('modalAluno').classList.remove('active')" class="btn btn-primary w-full mt-6">Fechar e salvar</button>
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
-        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
+    <!-- CABEÇALHO / MENU -->
+    <header class="no-print sticky top-0 z-40 bg-white/90 backdrop-blur border-b" style="border-color:var(--line)">
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+            <a href="#" class="font-display font-bold text-lg" style="color:var(--ink)">Ed. Física</a>
+            <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Principal">
+                <a href="#alunos" class="px-3 py-2 rounded-lg hover:bg-gray-100">Alunos</a>
+                <a href="#cadastro" class="px-3 py-2 rounded-lg hover:bg-gray-100">Cadastrar</a>
+                <a href="#resultadoArea" class="px-3 py-2 rounded-lg hover:bg-gray-100">Relatórios</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 space-y-12">
+
+        <!-- ALUNOS (início: título + ação principal) -->
+        <section id="alunos" class="no-print">
+            <h1 class="font-display font-bold text-3xl md:text-4xl leading-tight">Relatórios de Educação Física</h1>
+            <p class="mt-2 text-base max-w-xl" style="color:var(--muted)">Escolha a turma, ajuste gênero e perfil de cada aluno e gere os relatórios.</p>
+
+            <div id="abasContainer" class="flex gap-2 mt-8 overflow-x-auto pb-2" role="tablist"></div>
+            <div id="acoesTurma" class="flex gap-2 mt-3 hidden">
+                <button onclick="renomearTurma()" class="btn btn-ghost btn-sm">Renomear turma</button>
+                <button onclick="excluirTurma()" class="btn btn-danger btn-sm">Excluir turma</button>
+            </div>
+
+            <div class="card mt-4 overflow-hidden">
+                <div id="tabelaAlunos" class="divide-y" style="--tw-divide-opacity:1"></div>
+            </div>
+        </section>
+
+        <!-- Botão de ação sempre visível -->
+        <div class="no-print sticky bottom-0 z-30 -mx-4 px-4 py-3 bg-white/90 backdrop-blur border-t flex justify-center md:justify-end" style="border-color:var(--line)">
+            <button onclick="gerarTurmaToda()" class="btn btn-primary w-full md:w-auto md:px-10">Gerar relatórios da turma</button>
+        </div>
 
         <!-- CADASTRO -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
-                <h2 class="font-bold text-indigo-900">Cadastro Individual</h2>
-                <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg outline-none">
-                <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg outline-none">
-                <div class="grid grid-cols-2 gap-2">
-                    <select id="generoInd" class="p-2 border rounded-lg bg-white"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
-                    <select id="perfilInd" class="p-2 border rounded-lg bg-white">
-                        <option value="participativo">Participativo</option>
-                        <option value="pouco_participativo">Pouco Part.</option>
-                        <option value="agitado">Agitado</option>
-                        <option value="melhorar">Melhorar</option>
-                    </select>
+        <section id="cadastro" class="no-print">
+            <h2 class="font-display font-semibold text-2xl">Cadastrar alunos</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div class="card p-5 md:p-6 space-y-4">
+                    <h3 class="font-display font-semibold text-lg">Um aluno</h3>
+                    <div><label class="label" for="nomeInd">Nome</label><input type="text" id="nomeInd" class="field"></div>
+                    <div><label class="label" for="turmaInd">Turma (ex: 6º Ano A)</label><input type="text" id="turmaInd" class="field"></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="label" for="generoInd">Gênero</label>
+                            <select id="generoInd" class="field"><option value="masc">Masculino</option><option value="fem">Feminino</option></select></div>
+                        <div><label class="label" for="perfilInd">Perfil</label>
+                            <select id="perfilInd" class="field">
+                                <option value="participativo">Participativo</option>
+                                <option value="pouco_participativo">Pouco part.</option>
+                                <option value="agitado">Agitado</option>
+                                <option value="melhorar">Melhorar</option>
+                            </select></div>
+                    </div>
+                    <button onclick="salvarIndividual()" class="btn btn-primary w-full">Salvar aluno</button>
                 </div>
-                <button onclick="salvarIndividual()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition">Salvar Aluno</button>
+
+                <div class="card p-5 md:p-6 space-y-4">
+                    <h3 class="font-display font-semibold text-lg">Lista de alunos</h3>
+                    <div><label class="label" for="bulkAlunos">Nomes (um por linha)</label><textarea id="bulkAlunos" class="field"></textarea></div>
+                    <div><label class="label" for="turmaBulk">Turma deste grupo</label><input type="text" id="turmaBulk" class="field"></div>
+                    <button onclick="salvarMassa()" class="btn btn-ghost w-full">Importar todos</button>
+                </div>
             </div>
-            
-            <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                <h2 class="font-bold text-emerald-900 mb-2">Importar Lista (Massa)</h2>
-                <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none"></textarea>
-                <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2 outline-none">
-                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
+        </section>
+
+        <!-- RESULTADOS -->
+        <section id="resultadoArea" class="card p-5 md:p-8 hidden print:block print:border-0">
+            <div class="flex justify-between items-center gap-4 mb-6 no-print">
+                <h2 class="font-display font-semibold text-2xl">Relatórios gerados</h2>
+                <button onclick="window.print()" class="btn btn-ghost">Imprimir / PDF</button>
             </div>
-        </div>
-
-        <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
-        <div id="acoesTurma" class="flex gap-2 mb-4 justify-end hidden">
-            <button onclick="renomearTurma()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg">Renomear Turma</button>
-            <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg font-bold">Excluir Turma</button>
-        </div>
-
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
-            <table class="w-full text-left bg-white">
-                <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
-<tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Gênero</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
-                </thead>
-                <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
-            </table>
-        </div>
-        <button onclick="gerarTurmaToda()" class="mt-6 w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg">Gerar Relatórios da Turma</button>
-    </div>
-
-    <!-- RESULTADOS -->
-    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0 print:shadow-none">
-        <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
-            <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
-        </div>
-        <div id="listaRelatorios" class="space-y-6"></div>
-    </div>
+            <div id="listaRelatorios" class="space-y-4"></div>
+        </section>
+    </main>
 
     <script>
-        const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
+        /* ==========================================================================
+           COLE AQUI, do seu arquivo atual, estas 4 partes (sem alterar nada):
+             const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg'.trim();
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let alunos = [];
-        let turmaAtiva = "";
-        let relatoriosSalvosMap = {};
-
-        const frasesLongas = {
+             const frasesLongas = {
             participativo: { masc: ["demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe, colabora ativamente com os colegas e respeita as regras estabelecidas.", "é muito participativo e demonstra ótima compreensão das dinâmicas esportivas. Sua coordenação motora evoluiu bastante, e ele sempre incentiva o grupo, mantendo um clima de cooperação nas práticas.", "apresenta uma postura colaborativa exemplar, engajando-se ativamente nos desafios motores. Demonstra agilidade, interesse constante e respeito às normas, sendo um aluno que agrega muito valor ao dinamismo da turma.", "mostra grande dedicação nas aulas práticas, destacando-se pela facilidade em assimilar novos movimentos e pela prontidão em auxiliar os colegas durante as atividades em grupo.", "participa com notável interesse de todos os jogos, demonstrando um espírito esportivo louvável. Sua evolução técnica e social nas aulas é muito clara, sempre demonstrando respeito pelas regras e pelos companheiros."], fem: ["demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe, colabora ativamente com as colegas e respeita as regras estabelecidas.", "é muito participativa e demonstra ótima compreensão das dinâmicas esportivas. Sua coordenação motora evoluiu bastante, e ela sempre incentiva o grupo, mantendo um clima de cooperação nas práticas.", "apresenta uma postura colaborativa exemplar, engajando-se ativamente nos desafios motores. Demonstra agilidade, interesse constante e respeito às normas, sendo uma aluna que agrega muito valor ao dinamismo da turma.", "mostra grande dedicação nas aulas práticas, destacando-se pela facilidade em assimilar novos movimentos e pela prontidão em auxiliar as colegas durante as atividades em grupo.", "participa com notável interesse de todos os jogos, demonstrando um espírito esportivo louvável. Sua evolução técnica e social nas aulas é muito clara, sempre demonstrando respeito pelas regras e pelas companheiras."] },
             pouco_participativo: { masc: ["nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", "tem sido um aluno atento e cuidadoso em suas execuções individuais. Valorizamos seu ritmo de aprendizagem e estamos incentivando-o a ampliar sua participação oral e física, respeitando sempre sua forma de se integrar aos jogos coletivos.", "é um aluno reservado, mas notamos que observa atentamente cada instrução. Com estímulos constantes, tem dado pequenos passos importantes na integração com os colegas, ganhando progressivamente mais segurança nas atividades.", "demonstra uma postura cautelosa, mas sempre acompanha as instruções com atenção. Estamos trabalhando sua autoconfiança para que se sinta mais seguro para arriscar movimentos novos nas aulas práticas.", "tem um ritmo próprio e prefere observar antes de atuar, o que é respeitado. Gradualmente, estamos notando uma maior abertura para atividades em pequenos grupos, onde se sente mais seguro para participar."], fem: ["nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo.", "tem sido uma aluna atenta e cuidadosa em suas execuções individuais. Valorizamos seu ritmo de aprendizagem e estamos incentivando-a a ampliar sua participação oral e física, respeitando sempre sua forma de se integrar aos jogos coletivos.", "é uma aluna reservada, mas notamos que observa atentamente cada instrução. Com estímulos constantes, tem dado pequenos passos importantes na integração com as colegas, ganhando progressivamente mais segurança nas atividades.", "demonstra uma postura cautelosa, mas sempre acompanha as instruções com atenção. Estamos trabalhando sua autoconfiança para que se sinta mais segura para arriscar movimentos novos nas aulas práticas.", "tem um ritmo próprio e prefere observar antes de atuar, o que é respeitado. Gradualmente, estamos notando uma maior abertura para atividades em pequenos grupos, onde se sente mais segura para participar."] },
             agitado: { masc: ["possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", "é muito entusiasmado nas práticas motoras. Estamos auxiliando-o a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.", "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo.", "apresenta um entusiasmo constante que, quando bem direcionado, resulta em um ótimo desempenho. Estamos trabalhando o foco e a atenção aos detalhes para que essa energia seja transformada em técnica e precisão durante os jogos.", "é uma criança muito ativa e criativa. Trabalhamos para que essa vivacidade seja aliada ao aprendizado das regras e ao respeito aos limites do jogo coletivo, sempre valorizando seu alto potencial de participação."], fem: ["possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", "é muito entusiasmada nas práticas motoras. Estamos auxiliando-a a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.", "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo.", "apresenta um entusiasmo constante que, quando bem direcionado, resulta em um ótimo desempenho. Estamos trabalhando o foco e a atenção aos detalhes para que essa energia seja transformada em técnica e precisão durante os jogos.", "é uma criança muito ativa e criativa. Trabalhamos para que essa vivacidade seja aliada ao aprendizado das regras e ao respeito aos limites do jogo coletivo, sempre valorizando seu alto potencial de participação."] },
             melhorar: { masc: ["tem se dedicado com esforço em suas trajetórias nas atividades práticas. Focamos em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes.", "mostra-se interessado em evoluir e superar obstáculos. Estamos focados em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais.", "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ele desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula.", "está em uma fase de desenvolvimento de suas capacidades motoras básicas. Com paciência e exercícios adequados, estamos estimulando seu progresso e fortalecendo seu interesse pelas práticas esportivas, respeitando seu momento.", "apresenta potencial e estamos focados em ampliar sua confiança nas atividades. Com o suporte da família junto à nossa parceria pedagógica, caminhamos passo a passo para conquistas importantes no desenvolvimento de suas habilidades."], fem: ["tem se dedicado com esforço em suas trajetórias nas atividades práticas. Focamos em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes.", "mostra-se interessada em evoluir e superar obstáculos. Estamos focadas em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais.", "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ela desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula.", "está em uma fase de desenvolvimento de suas capacidades motoras básicas. Com paciência e exercícios adequados, estamos estimulando seu progresso e fortalecendo seu interesse pelas práticas esportivas, respeitando seu momento.", "apresenta potencial e estamos focadas em ampliar sua confiança nas atividades. Com o suporte da família junto à nossa parceria pedagógica, caminhamos passo a passo para conquistas importantes no desenvolvimento de suas habilidades."] }
         };
+
+           ========================================================================== */
+
+        let alunos = [];
+        let turmaAtiva = "";
+        let relatoriosSalvosMap = {};
+
+        const SEM_FOTO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%23e6e9f0'/><circle cx='32' cy='25' r='11' fill='%23a3abbd'/><path d='M10 64c2-14 12-22 22-22s20 8 22 22z' fill='%23a3abbd'/></svg>";
 
         async function carregar(manterTurma = null) {
             const { data: dataAlunos } = await sb.from('alunos').select('*').order('nome');
@@ -142,72 +214,83 @@
         }
 
         function abrirModalAluno(id) {
-    const a = alunos.find(al => al.id === id);
-    document.getElementById('modalConteudo').innerHTML = `
-        <div class="relative inline-block w-full text-center">
-            <img src="${a.foto_url || 'https://via.placeholder.com/200'}" class="w-64 h-64 mx-auto object-cover rounded-2xl border-4 border-indigo-50 shadow-lg">
-            <label class="absolute bottom-2 right-[calc(50%-110px)] bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md">
-                ✎ <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
-            </label>
-        </div>
-        <div class="mt-4 text-left">
-            <label class="text-[10px] font-bold text-gray-400 uppercase">Nome (Toque para editar)</label>
-            <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" 
-                class="w-full text-2xl font-black text-indigo-900 border-b-2 border-gray-100 outline-none pb-1 bg-transparent">
-
-            <div class="grid grid-cols-2 gap-3 mt-4">
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 uppercase">Turma</label>
-                    <input type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value.trim()); abrirModalAluno('${a.id}');"
-                        class="w-full p-2 border rounded-lg outline-none text-sm">
+            const a = alunos.find(al => al.id === id);
+            document.getElementById('modalConteudo').innerHTML = `
+                <div class="relative inline-block w-full text-center">
+                    <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-56 h-56 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
+                    <label class="absolute bottom-2 right-[calc(50%-104px)] btn btn-primary btn-sm !min-h-[40px] !px-3 shadow-md" title="Trocar foto">
+                        Trocar foto <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
+                    </label>
                 </div>
-                <div>
-                    <label class="text-[10px] font-bold text-gray-400 uppercase">Gênero</label>
-                    <select onchange="atualizarDado('${a.id}', 'genero', this.value); abrirModalAluno('${a.id}');"
-                        class="w-full p-2 border rounded-lg bg-white text-sm">
-                        <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
-                        <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
-                    </select>
-                </div>
-            </div>
+                <div class="mt-5 text-left">
+                    <label class="label" for="mNome">Nome</label>
+                    <input id="mNome" type="text" value="a.nome"onchange="atualizarDado('{a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" class="field font-semibold">
 
-            <p class="text-sm text-gray-500 mt-3 uppercase">Perfil: ${a.perfil}</p>
-        </div>
-    `;
-    document.getElementById('modalAluno').classList.add('active');
-}
+                    <div class="grid grid-cols-2 gap-3 mt-4">
+                        <div>
+                            <label class="label" for="mTurma">Turma</label>
+                            <input id="mTurma" type="text" value="a.turma"onchange="atualizarDado('{a.id}', 'turma', this.value.trim()); abrirModalAluno('${a.id}');" class="field">
+                        </div>
+                        <div>
+                            <label class="label" for="mGenero">Gênero</label>
+                            <select id="mGenero" onchange="atualizarDado('a.id','genero',this.value);abrirModalAluno('{a.id}');" class="field">
+                                <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
+                                <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-sm mt-4" style="color:var(--muted)">Perfil: ${a.perfil}</p>
+                </div>
+            `;
+            document.getElementById('modalAluno').classList.add('active');
+        }
 
         function fecharModal(e) { if (e && e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active'); }
 
+        // Reduz a foto e salva em WebP: página e banco ficam bem mais leves
+        function comprimirFoto(file) {
+            return new Promise(resolve => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    const escala = Math.min(1, 480 / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.round(img.width * escala);
+                    c.height = Math.round(img.height * escala);
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    URL.revokeObjectURL(url);
+                    resolve(c.toDataURL('image/webp', 0.8));
+                };
+                img.src = url;
+            });
+        }
+
         async function alterarFoto(input, id, doModal = false) {
             if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    await sb.from('alunos').update({ foto_url: e.target.result }).eq('id', id);
-                    const aluno = alunos.find(a => a.id === id);
-                    if (aluno) aluno.foto_url = e.target.result;
-                    if(doModal) abrirModalAluno(id);
-                    renderTabela();
-                    renderRelatorios();
-                };
-                reader.readAsDataURL(input.files[0]);
+                const dataUrl = await comprimirFoto(input.files[0]);
+                await sb.from('alunos').update({ foto_url: dataUrl }).eq('id', id);
+                const aluno = alunos.find(a => a.id === id);
+                if (aluno) aluno.foto_url = dataUrl;
+                if (doModal) abrirModalAluno(id);
+                renderTabela();
+                renderRelatorios();
             }
         }
 
         async function renomearTurma() {
             const novo = prompt(`Novo nome para "${turmaAtiva}":`);
-            if (novo && novo.trim() !== "") { 
+            if (novo && novo.trim() !== "") {
                 const nomeLimpo = novo.trim();
-                await sb.from('alunos').update({ turma: nomeLimpo }).eq('turma', turmaAtiva); 
-                await carregar(nomeLimpo); 
+                await sb.from('alunos').update({ turma: nomeLimpo }).eq('turma', turmaAtiva);
+                await carregar(nomeLimpo);
             }
         }
 
         async function excluirTurma() {
-            if (confirm(`Excluir toda a turma "${turmaAtiva}"?`)) { 
-                await sb.from('alunos').delete().eq('turma', turmaAtiva); 
-                turmaAtiva = ""; 
-                await carregar(); 
+            if (confirm(`Excluir toda a turma "${turmaAtiva}"?`)) {
+                await sb.from('alunos').delete().eq('turma', turmaAtiva);
+                turmaAtiva = "";
+                await carregar();
             }
         }
 
@@ -219,48 +302,44 @@
             const turmas = [...new Set(alunos.map(a => a.turma))].sort();
             if (turmas.length > 0) {
                 acoes.classList.remove('hidden');
-                container.innerHTML = turmas.map(t => `<button onclick="turmaAtiva='${t}'; renderTabs(); renderTabela(); renderRelatorios();" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
+                container.innerHTML = turmas.map(t => `<button role="tab" aria-selected="turmaAtiva===t"onclick="turmaAtiva='{t}'; renderTabs(); renderTabela(); renderRelatorios();" class="aba turmaAtiva===t?'aba-ativa':''">{t}</button>`).join('');
             } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
         }
 
         function renderTabela() {
-    const tbody = document.getElementById('tabelaAlunos');
-    const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
-    if (filtrados.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400">Nenhum aluno.</td></tr>`; return; }
-    tbody.innerHTML = filtrados.map(a => `
-        <tr class="hover:bg-gray-50 border-b">
-            <td class="p-2"><img src="${a.foto_url || 'https://via.placeholder.com/50'}" onclick="abrirModalAluno('${a.id}')" class="foto-preview"></td>
-            <td class="p-2 font-bold text-gray-700 cursor-pointer" onclick="abrirModalAluno('${a.id}')">${a.nome}</td>
-            <td class="p-2">
-                <select onchange="atualizarDado('${a.id}', 'genero', this.value)" class="p-1 border rounded bg-white text-xs w-full">
-                    <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
-                    <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
-                </select>
-            </td>
-            <td class="p-2">
-                <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full">
-                    <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
-                    <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
-                    <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
-                    <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
-                </select>
-            </td>
-            <td class="p-2 text-center flex justify-center gap-2">
-                <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow-md">GERAR</button>
-                <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
-            </td>
-        </tr>
-    `).join('');
-}
+            const tbody = document.getElementById('tabelaAlunos');
+            const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
+            if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Cadastre abaixo.</p>`; return; }
+            tbody.innerHTML = filtrados.map(a => `
+                <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
+                    <img src="${a.foto_url || SEM_FOTO}" alt="Foto de a.nome"loading="lazy"onclick="abrirModalAluno('{a.id}')" class="foto-preview">
+                    <button onclick="abrirModalAluno('a.id')"class="flex-1min-w-[140px]text-leftfont-semiboldtext-basehover:underline">{a.nome}</button>
+                    <select aria-label="Gênero de a.nome"onchange="atualizarDado('{a.id}', 'genero', this.value)" class="field field-sm w-auto">
+                        <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
+                        <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
+                    </select>
+                    <select aria-label="Perfil de a.nome"onchange="atualizarDado('{a.id}', 'perfil', this.value)" class="field field-sm w-auto">
+                        <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
+                        <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco part.</option>
+                        <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
+                        <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
+                    </select>
+                    <div class="flex gap-2 ml-auto">
+                        <button onclick="gerarIndividual('${a.id}')" class="btn btn-primary btn-sm">Gerar</button>
+                        <button onclick="remover('${a.id}')" class="btn btn-danger btn-sm" aria-label="Excluir ${a.nome}">Excluir</button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
         async function gerarIndividual(id) {
             const a = alunos.find(al => al.id === id);
             const opcoes = frasesLongas[a.perfil][a.genero];
             const fraseEscolhida = opcoes[Math.floor(Math.random() * opcoes.length)];
             const textoFinal = `${a.nome} ${fraseEscolhida}`;
-            
+
             await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
-            relatoriosSalvosMap[id] = textoFinal; 
+            relatoriosSalvosMap[id] = textoFinal;
             renderRelatorios();
             document.getElementById('resultadoArea').scrollIntoView({ behavior: 'smooth' });
         }
@@ -270,16 +349,16 @@
         function renderRelatorios() {
             const area = document.getElementById('resultadoArea');
             const container = document.getElementById('listaRelatorios');
-            
+
             const filtrados = alunos
                 .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
                 .sort((a, b) => a.nome.localeCompare(b.nome));
 
             const html = filtrados.map(a => {
-                return `<div class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
-                    <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 text-gray-400">✕</button>
-                    ${a.foto_url ? `<img src="${a.foto_url}" class="w-24 h-24 rounded-lg object-cover shadow-sm bg-white p-1 flex-shrink-0">` : ''}
-                    <div class="flex-1 text-center md:text-justify"><p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${turmaAtiva})</p><p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[a.id]}</p></div></div>`;
+                return `<article class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 rounded-2xl border relative" style="background:var(--bg);border-color:var(--line)">
+                    <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200" aria-label="Remover relatório de ${a.nome}">✕</button>
+                    ${a.foto_url ? `<img src="${a.foto_url}" alt="Foto de ${a.nome}" loading="lazy" class="w-24 h-24 rounded-2xl object-cover bg-white flex-shrink-0">` : ''}
+                    <div class="flex-1 text-center md:text-justify"><p class="font-display font-semibold">a.nome.toUpperCase()({turmaAtiva})</p><p class="text-sm mt-1 leading-relaxed" style="color:#2d3748">${relatoriosSalvosMap[a.id]}</p></div></article>`;
             }).join('');
 
             if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
@@ -291,3 +370,4 @@
     </script>
 </body>
 </html>
+
