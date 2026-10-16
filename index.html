@@ -26,9 +26,8 @@
     </div>
 
     <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
-        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4 text-center md:text-left">Gerador de Relatórios: Ed. Física</h1>
+        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
 
-        <!-- CADASTRO -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
                 <h2 class="font-bold text-indigo-900">Cadastro Individual</h2>
@@ -37,10 +36,8 @@
                 <div class="grid grid-cols-2 gap-2">
                     <select id="generoInd" class="p-2 border rounded-lg bg-white"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
                     <select id="perfilInd" class="p-2 border rounded-lg bg-white">
-                        <option value="participativo">Participativo</option>
-                        <option value="pouco_participativo">Pouco Part.</option>
-                        <option value="agitado">Agitado</option>
-                        <option value="melhorar">Melhorar</option>
+                        <option value="participativo">Participativo</option><option value="pouco_participativo">Pouco Part.</option>
+                        <option value="agitado">Agitado</option><option value="melhorar">Melhorar</option>
                     </select>
                 </div>
                 <button onclick="salvarIndividual()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition">Salvar Aluno</button>
@@ -60,10 +57,10 @@
             <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg font-bold">Excluir Turma</button>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <div class="overflow-x-auto rounded-lg border">
             <table class="w-full text-left bg-white">
                 <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
-                    <tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
+                    <tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3 text-center">Ações</th></tr>
                 </thead>
                 <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
             </table>
@@ -71,7 +68,6 @@
         <button onclick="gerarTurmaToda()" class="mt-6 w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg">Gerar Relatórios da Turma</button>
     </div>
 
-    <!-- RESULTADOS -->
     <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0 print:shadow-none">
         <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
             <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
@@ -81,50 +77,71 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg'.trim();
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const sb = supabase.createClient('https://pojvyniepaloewkqmwsq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg');
 
         let alunos = [];
         let turmaAtiva = "";
         let relatoriosSalvosMap = {};
 
         const frasesLongas = {
-            participativo: { masc: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos.", fem: "demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe e colabora ativamente, respeitando as regras dos jogos." },
-            pouco_participativo: { masc: "nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", fem: "nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo." },
-            agitado: { masc: "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", fem: "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica e o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios." },
-            melhorar: { masc: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
+            participativo: { 
+                masc: [
+                    "demonstra um excelente engajamento nas aulas de Educação Física. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe, colabora ativamente com os colegas e respeita as regras estabelecidas.",
+                    "é muito participativo e demonstra ótima compreensão das dinâmicas esportivas. Sua coordenação motora evoluiu bastante, e ele sempre incentiva o grupo, mantendo um clima de cooperação e respeito nas práticas.",
+                    "apresenta uma postura colaborativa exemplar, engajando-se ativamente nos desafios motores. Demonstra agilidade, interesse constante e respeito às normas, sendo um aluno que agrega muito valor ao dinamismo da turma."
+                ],
+                fem: [
+                    "demonstra um excelente engajamento nas aulas de Educação Física. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe, colabora ativamente com as colegas e respeita as regras estabelecidas.",
+                    "é muito participativa e demonstra ótima compreensão das dinâmicas esportivas. Sua coordenação motora evoluiu bastante, e ela sempre incentiva o grupo, mantendo um clima de cooperação e respeito nas práticas.",
+                    "apresenta uma postura colaborativa exemplar, engajando-se ativamente nos desafios motores. Demonstra agilidade, interesse constante e respeito às normas, sendo uma aluna que agrega muito valor ao dinamismo da turma."
+                ]
+            },
+            pouco_participativo: { 
+                masc: [
+                    "nas práticas esportivas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.",
+                    "tem sido um aluno atento e cuidadoso em suas execuções individuais. Valorizamos seu ritmo de aprendizagem e estamos incentivando-o a ampliar sua participação oral e física, respeitando sempre sua forma de se integrar aos jogos coletivos.",
+                    "é um aluno reservado, mas notamos que observa atentamente cada instrução. Com estímulos constantes, tem dado pequenos passos importantes na integração com os colegas, ganhando progressivamente mais segurança nas atividades."
+                ],
+                fem: [
+                    "nas práticas esportivas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo.",
+                    "tem sido uma aluna atenta e cuidadosa em suas execuções individuais. Valorizamos seu ritmo de aprendizagem e estamos incentivando-a a ampliar sua participação oral e física, respeitando sempre sua forma de se integrar aos jogos coletivos.",
+                    "é uma aluna reservada, mas notamos que observa atentamente cada instrução. Com estímulos constantes, tem dado pequenos passos importantes na integração com as colegas, ganhando progressivamente mais segurança nas atividades."
+                ]
+            },
+            agitado: { 
+                masc: [
+                    "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco necessário nas regras dos jogos. É gratificante observar como ele direciona essa vivacidade para superar novos desafios.",
+                    "é muito entusiasmado nas práticas motoras. Estamos auxiliando-o a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.",
+                    "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo."
+                ],
+                fem: [
+                    "possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco nas regras dos jogos. É gratificante observar como ela direciona essa vivacidade para superar novos desafios.",
+                    "é muito entusiasmada nas práticas motoras. Estamos auxiliando-a a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.",
+                    "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo."
+                ]
+            },
+            melhorar: { 
+                masc: [
+                    "tem se dedicado com esforço em suas trajetórias nas atividades práticas. Estamos focados em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando passo a passo rumo a conquistas importantes.",
+                    "mostra-se interessado em evoluir e superar obstáculos. Estamos focados em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais, atingindo um desenvolvimento físico sólido.",
+                    "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ele desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula."
+                ],
+                fem: [
+                    "tem se dedicado com esforço em suas trajetórias nas atividades práticas. Estamos focadas em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando passo a passo rumo a conquistas importantes.",
+                    "mostra-se interessada em evoluir e superar obstáculos. Estamos focadas em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais, atingindo um desenvolvimento físico sólido.",
+                    "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ela desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula."
+                ]
+            }
         };
-
-        function comprimirImagem(file, callback) {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = event => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 300;
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    callback(canvas.toDataURL('image/jpeg', 0.6));
-                };
-            };
-        }
 
         async function carregar(manterTurma = null) {
             const { data: dataAlunos } = await sb.from('alunos').select('*').order('nome');
             alunos = dataAlunos || [];
-            
             const { data: dataRels } = await sb.from('relatorios').select('*');
             relatoriosSalvosMap = {};
             if (dataRels) dataRels.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
-
             if (manterTurma) turmaAtiva = manterTurma;
             else if (alunos.length > 0 && (!turmaAtiva || !alunos.some(a => a.turma === turmaAtiva))) turmaAtiva = alunos[0].turma;
-            
             renderTabs(); renderTabela(); renderRelatorios();
         }
 
@@ -140,11 +157,10 @@
         async function salvarMassa() {
             const texto = document.getElementById('bulkAlunos').value.trim();
             const turma = document.getElementById('turmaBulk').value.trim();
-            if (!texto || !turma) return alert("Preencha os campos!");
+            if (!texto || !turma) return alert("Preencha!");
             const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: 'masc', perfil: 'participativo' }));
             await sb.from('alunos').insert(novos);
-            document.getElementById('bulkAlunos').value = "";
-            document.getElementById('turmaBulk').value = "";
+            document.getElementById('bulkAlunos').value = ""; document.getElementById('turmaBulk').value = "";
             await carregar(turma);
         }
 
@@ -162,27 +178,16 @@
             const a = alunos.find(al => al.id === id);
             document.getElementById('modalConteudo').innerHTML = `
                 <div class="relative inline-block w-full text-center">
-                    <img src="${a.foto_url || 'https://via.placeholder.com/200'}" class="w-48 h-48 mx-auto object-cover rounded-2xl border-4 border-indigo-50 shadow-lg">
-                    <label class="absolute bottom-2 right-[calc(50%-100px)] bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md">
+                    <img src="${a.foto_url || 'https://via.placeholder.com/200'}" class="w-64 h-64 mx-auto object-cover rounded-2xl border-4 border-indigo-50 shadow-lg">
+                    <label class="absolute bottom-2 right-[calc(50%-110px)] bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md">
                         ✎ <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
                     </label>
                 </div>
-                <div class="mt-4 text-left space-y-3">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Nome</label>
-                        <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value)" class="w-full font-black text-xl border-b outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Turma</label>
-                        <input type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value)" class="w-full font-bold border-b outline-none">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase">Gênero</label>
-                        <select onchange="atualizarDado('${a.id}', 'genero', this.value)" class="w-full font-bold border-b outline-none">
-                            <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
-                            <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
-                        </select>
-                    </div>
+                <div class="mt-4 text-left">
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">Nome (Toque para editar)</label>
+                    <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" 
+                        class="w-full text-2xl font-black text-indigo-900 border-b-2 border-gray-100 outline-none pb-1 bg-transparent">
+                    <p class="text-sm text-gray-500 mt-2 uppercase">Turma: ${a.turma} | Perfil: ${a.perfil}</p>
                 </div>
             `;
             document.getElementById('modalAluno').classList.add('active');
@@ -192,14 +197,16 @@
 
         async function alterarFoto(input, id, doModal = false) {
             if (input.files && input.files[0]) {
-                comprimirImagem(input.files[0], async (base64) => {
-                    await sb.from('alunos').update({ foto_url: base64 }).eq('id', id);
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    await sb.from('alunos').update({ foto_url: e.target.result }).eq('id', id);
                     const aluno = alunos.find(a => a.id === id);
-                    if (aluno) aluno.foto_url = base64;
+                    if (aluno) aluno.foto_url = e.target.result;
                     if(doModal) abrirModalAluno(id);
                     renderTabela();
                     renderRelatorios();
-                });
+                };
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
@@ -249,7 +256,7 @@
                         </select>
                     </td>
                     <td class="p-2 text-center flex justify-center gap-2">
-                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow-md">GERAR</button>
+                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold">GERAR</button>
                         <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
                     </td>
                 </tr>
@@ -258,10 +265,9 @@
 
         async function gerarIndividual(id) {
             const a = alunos.find(al => al.id === id);
-            const opcoes = ["participativo", "pouco_participativo", "agitado", "melhorar"][Math.floor(Math.random())]; 
-            // Na verdade, pega a frase aleatória do banco de frases já configurado:
-            const frases = frasesLongas[a.perfil][a.genero];
-            const textoFinal = `${a.nome} ${frases}`; // Nota: se quiser aleatória entre as 3, precisaríamos alterar a estrutura do banco de frases.
+            const opcoes = frasesLongas[a.perfil][a.genero];
+            const textoEscolhido = opcoes[Math.floor(Math.random() * opcoes.length)];
+            const textoFinal = `${textoEscolhido}`;
             
             await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
             relatoriosSalvosMap[id] = textoFinal; 
@@ -274,15 +280,14 @@
         function renderRelatorios() {
             const area = document.getElementById('resultadoArea');
             const container = document.getElementById('listaRelatorios');
-            const filtrados = alunos.filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id]).sort((a,b) => a.nome.localeCompare(b.nome));
-
-            const html = filtrados.map(a => {
+            const idsAtivos = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
+            const html = Object.keys(relatoriosSalvosMap).filter(id => idsAtivos.includes(id)).map(id => {
+                const a = alunos.find(al => al.id === id);
                 return `<div class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
                     <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 text-gray-400">✕</button>
-                    ${a.foto_url ? `<img src="${a.foto_url}" class="w-24 h-24 rounded-lg object-contain bg-white p-1 shadow-sm flex-shrink-0">` : ''}
-                    <div class="flex-1 text-center md:text-justify"><p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${turmaAtiva})</p><p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[a.id]}</p></div></div>`;
+                    ${a && a.foto_url ? `<img src="${a.foto_url}" class="w-24 h-24 rounded-lg object-cover shadow-sm bg-white p-1 flex-shrink-0">` : ''}
+                    <div class="flex-1 text-justify"><p class="font-bold text-gray-800">${a ? a.nome.toUpperCase() : ''} (${turmaAtiva})</p><p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[id]}</p></div></div>`;
             }).join('');
-
             if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
         }
 
