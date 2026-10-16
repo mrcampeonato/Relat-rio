@@ -6,13 +6,17 @@
     <link rel="manifest" href="manifest.json">
     <title>Relatórios Educação Física</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Script do Supabase com fallback de carregamento -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @media print { .no-print { display: none; } }
         .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
-        .foto-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; }
+        .foto-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; background: #f3f4f6; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
         .modal.active { display: flex; }
+        /* Skeleton loading simples */
+        .loading-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
     </style>
 </head>
 <body class="bg-gray-50 p-2 md:p-8 font-sans">
@@ -21,65 +25,82 @@
     <div id="modalAluno" class="modal no-print" onclick="fecharModal(event)">
         <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl" onclick="event.stopPropagation()">
             <div id="modalConteudo"></div>
-            <button onclick="fecharModal(null)" class="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-bold">Salvar e Voltar</button>
+            <button onclick="fecharModal(null)" class="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Salvar e Voltar</button>
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border no-print">
+    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
         <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
 
-        <!-- CADASTRO -->
+        <!-- PAINEL DE CADASTRO -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
-                <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg outline-none">
-                <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg outline-none">
+                <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
+                <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
                 <div class="grid grid-cols-2 gap-2">
-                    <select id="generoInd" class="p-2 border rounded-lg bg-white"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
-                    <select id="perfilInd" class="p-2 border rounded-lg bg-white">
-                        <option value="participativo">Participativo</option><option value="pouco_participativo">Pouco Part.</option>
-                        <option value="agitado">Agitado</option><option value="melhorar">Melhorar</option>
+                    <select id="generoInd" class="p-2 border rounded-lg bg-white outline-none">
+                        <option value="masc">Masculino</option>
+                        <option value="fem">Feminino</option>
+                    </select>
+                    <select id="perfilInd" class="p-2 border rounded-lg bg-white outline-none">
+                        <option value="participativo">Participativo</option>
+                        <option value="pouco_participativo">Pouco Part.</option>
+                        <option value="agitado">Agitado</option>
+                        <option value="melhorar">Melhorar</option>
                     </select>
                 </div>
-                <button onclick="salvarIndividual()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg">Salvar Aluno</button>
+                <button onclick="salvarIndividual()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition">Salvar Aluno</button>
             </div>
             
             <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none"></textarea>
+                <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none focus:ring-2 focus:ring-emerald-400"></textarea>
                 <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2 outline-none">
-                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg">Importar em Massa</button>
+                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition">Importar em Massa</button>
             </div>
         </div>
 
         <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
 
         <div id="acoesTurma" class="flex gap-2 mb-4 justify-end hidden">
-            <button onclick="renomearTurma()" class="text-xs bg-gray-100 px-3 py-1 rounded-lg">Renomear Turma</button>
-            <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg font-bold">Excluir Turma</button>
+            <button onclick="renomearTurma()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-200">Renomear Turma</button>
+            <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg hover:bg-red-100 font-bold">Excluir Turma</button>
         </div>
 
-        <div class="overflow-x-auto rounded-lg border">
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
             <table class="w-full text-left bg-white">
                 <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
-                    <tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
+                    <tr>
+                        <th class="p-3">Foto</th>
+                        <th class="p-3">Nome</th>
+                        <th class="p-3">Perfil</th>
+                        <th class="p-3 text-center">Ações</th>
+                    </tr>
                 </thead>
-                <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
+                <tbody id="tabelaAlunos" class="divide-y text-sm">
+                    <tr><td colspan="4" class="p-8 text-center text-gray-400 loading-pulse">Carregando dados do servidor...</td></tr>
+                </tbody>
             </table>
         </div>
-        <button onclick="gerarTurmaToda()" class="mt-6 w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg">Gerar Relatórios da Turma</button>
+        
+        <div class="mt-6 flex justify-center md:justify-end">
+            <button onclick="gerarTurmaToda()" class="w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition">Gerar Relatórios da Turma</button>
+        </div>
     </div>
 
     <!-- RESULTADOS -->
-    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0">
+    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0 print:shadow-none">
         <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
             <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
+            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-black transition">Imprimir / PDF</button>
         </div>
         <div id="listaRelatorios" class="space-y-6"></div>
     </div>
 
     <script>
+        // CONFIGURAÇÕES SUPABASE
         const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg';
+        
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let alunos = [];
@@ -101,29 +122,36 @@
                 img.src = event.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 400;
+                    const MAX_WIDTH = 300; // Tamanho compacto para o banco
                     const scaleSize = MAX_WIDTH / img.width;
                     canvas.width = MAX_WIDTH;
                     canvas.height = img.height * scaleSize;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    callback(canvas.toDataURL('image/jpeg', 0.7));
+                    callback(canvas.toDataURL('image/jpeg', 0.6));
                 };
             };
         }
 
         async function carregar() {
-            // CARREGA ALUNOS (Sem depender dos relatórios para aparecer)
-            const { data: dataAlunos } = await sb.from('alunos').select('*').order('nome');
-            alunos = dataAlunos || [];
-            
-            // CARREGA RELATÓRIOS (Em paralelo)
-            const { data: dataRels } = await sb.from('relatorios').select('*');
-            relatoriosSalvosMap = {};
-            if (dataRels) dataRels.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
+            try {
+                const { data: dataAlunos, error: errA } = await sb.from('alunos').select('*').order('nome');
+                if (errA) throw errA;
+                alunos = dataAlunos || [];
 
-            if (alunos.length > 0 && !turmaAtiva) turmaAtiva = alunos[0].turma;
-            renderTabs(); renderTabela(); renderRelatorios();
+                const { data: dataRels } = await sb.from('relatorios').select('*');
+                relatoriosSalvosMap = {};
+                if (dataRels) dataRels.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
+
+                if (alunos.length > 0 && !turmaAtiva) turmaAtiva = alunos[0].turma;
+                
+                renderTabs();
+                renderTabela();
+                renderRelatorios();
+            } catch (e) {
+                console.error("Falha ao carregar:", e);
+                document.getElementById('tabelaAlunos').innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500">Erro ao carregar dados. Verifique sua conexão.</td></tr>`;
+            }
         }
 
         async function salvarIndividual() {
@@ -131,16 +159,18 @@
             const turma = document.getElementById('turmaInd').value.trim();
             if (!nome || !turma) return alert("Preencha Nome e Turma!");
             await sb.from('alunos').insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value }]);
-            document.getElementById('nomeInd').value = ""; carregar();
+            document.getElementById('nomeInd').value = "";
+            carregar();
         }
 
         async function salvarMassa() {
             const texto = document.getElementById('bulkAlunos').value.trim();
             const turma = document.getElementById('turmaBulk').value.trim();
-            if (!texto || !turma) return alert("Preencha os campos!");
+            if (!texto || !turma) return alert("Preencha a lista e a turma!");
             const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: 'masc', perfil: 'participativo' }));
             await sb.from('alunos').insert(novos);
-            document.getElementById('bulkAlunos').value = ""; carregar();
+            document.getElementById('bulkAlunos').value = "";
+            carregar();
         }
 
         async function atualizarDado(id, campo, valor) {
@@ -156,16 +186,22 @@
             const a = alunos.find(al => al.id === id);
             const conteudo = document.getElementById('modalConteudo');
             conteudo.innerHTML = `
-                <div class="relative inline-block w-full">
-                    <img src="${a.foto_url || 'https://via.placeholder.com/200'}" class="w-64 h-64 mx-auto object-cover rounded-2xl border-4 border-indigo-50 shadow-lg">
-                    <label class="absolute bottom-2 right-[calc(50%-115px)] bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md">
+                <div class="relative inline-block w-full text-center">
+                    <img src="${a.foto_url || 'https://via.placeholder.com/250'}" class="w-64 h-64 mx-auto object-cover rounded-2xl border-4 border-indigo-50 shadow-lg">
+                    <label class="absolute bottom-2 right-[calc(50%-110px)] bg-indigo-600 text-white p-2.5 rounded-full cursor-pointer shadow-lg hover:bg-indigo-700 transition">
                         ✎ <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
                     </label>
                 </div>
-                <div class="mt-4 text-left">
-                    <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value)" 
-                        class="w-full text-2xl font-black text-indigo-900 border-b-2 border-gray-100 focus:border-indigo-400 outline-none pb-1">
-                    <p class="text-sm text-gray-500 mt-2"><strong>Turma:</strong> ${a.turma} | <strong>Perfil:</strong> ${a.perfil}</p>
+                <div class="mt-6 text-left space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Nome do Aluno (Clique para editar)</label>
+                        <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value)" 
+                            class="w-full text-2xl font-black text-gray-800 border-b-2 border-gray-100 focus:border-indigo-500 outline-none pb-1 bg-transparent">
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-xl flex justify-between items-center">
+                        <span class="text-sm text-gray-500 font-medium uppercase tracking-tight">Turma: ${a.turma}</span>
+                        <span class="text-sm text-gray-500 font-medium uppercase tracking-tight">Perfil: ${a.perfil}</span>
+                    </div>
                 </div>
             `;
             document.getElementById('modalAluno').classList.add('active');
@@ -176,9 +212,11 @@
         async function alterarFoto(input, id, doModal = false) {
             if (input.files && input.files[0]) {
                 comprimirImagem(input.files[0], async (base64) => {
+                    const aluno = alunos.find(a => a.id === id);
+                    if (aluno) aluno.foto_url = base64;
+                    renderTabela();
                     await sb.from('alunos').update({ foto_url: base64 }).eq('id', id);
                     if(doModal) abrirModalAluno(id);
-                    carregar();
                 });
             }
         }
@@ -200,18 +238,23 @@
             const turmas = [...new Set(alunos.map(a => a.turma))].sort();
             if (turmas.length > 0) {
                 acoes.classList.remove('hidden');
-                container.innerHTML = turmas.map(t => `<button onclick="turmaAtiva='${t}'; renderTabs(); renderTabela(); renderRelatorios();" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
+                container.innerHTML = turmas.map(t => `<button onclick="turmaAtiva='${t}'; renderTabs(); renderTabela(); renderRelatorios();" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap transition-all ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400 hover:text-gray-600'}">${t}</button>`).join('');
             } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
         }
 
         function renderTabela() {
             const tbody = document.getElementById('tabelaAlunos');
-            tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).map(a => `
-                <tr class="hover:bg-gray-50 border-b">
-                    <td class="p-2"><img src="${a.foto_url || 'https://via.placeholder.com/50'}" onclick="abrirModalAluno('${a.id}')" class="foto-preview"></td>
-                    <td class="p-2 font-bold text-gray-700 cursor-pointer" onclick="abrirModalAluno('${a.id}')">${a.nome}</td>
+            const filtrados = alunos.filter(a => a.turma === turmaAtiva);
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-400">Nenhum aluno nesta turma.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = filtrados.map(a => `
+                <tr class="hover:bg-gray-50 border-b transition-colors">
+                    <td class="p-2"><img src="${a.foto_url || 'https://via.placeholder.com/50'}" onclick="abrirModalAluno('${a.id}')" class="foto-preview shadow-sm"></td>
+                    <td class="p-2 font-bold text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors" onclick="abrirModalAluno('${a.id}')">${a.nome}</td>
                     <td class="p-2">
-                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full">
+                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full min-w-[100px] cursor-pointer">
                             <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
                             <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
                             <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
@@ -219,8 +262,8 @@
                         </select>
                     </td>
                     <td class="p-2 text-center flex justify-center gap-2">
-                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow-md">GERAR</button>
-                        <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
+                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-black shadow hover:bg-indigo-700 transition transform active:scale-95">GERAR</button>
+                        <button onclick="remover('${a.id}')" class="text-red-300 hover:text-red-600 transition-colors p-1">✕</button>
                     </td>
                 </tr>
             `).join('');
@@ -230,7 +273,8 @@
             const a = alunos.find(al => al.id === id);
             const textoFinal = `${a.nome} ${frasesLongas[a.perfil][a.genero]}`;
             await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
-            relatoriosSalvosMap[id] = textoFinal; renderRelatorios();
+            relatoriosSalvosMap[id] = textoFinal;
+            renderRelatorios();
         }
 
         function gerarTurmaToda() { alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id)); }
@@ -238,25 +282,27 @@
         function renderRelatorios() {
             const area = document.getElementById('resultadoArea');
             const container = document.getElementById('listaRelatorios');
-            const filtrados = alunos.filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id]);
-            if (filtrados.length > 0) {
-                area.classList.remove('hidden');
-                container.innerHTML = filtrados.map(a => `
-                    <div class="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative">
-                        <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 text-gray-400 hover:text-red-500">✕</button>
-                        ${a.foto_url ? `<img src="${a.foto_url}" class="w-full md:w-24 h-48 md:h-24 rounded-lg object-cover shadow-sm">` : ''}
+            const idsAtivos = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
+            const html = Object.keys(relatoriosSalvosMap).filter(id => idsAtivos.includes(id)).map(id => {
+                const a = alunos.find(al => al.id === id);
+                return `
+                    <div class="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-xl border-l-8 border-indigo-500 relative animate-in fade-in slide-in-from-left-2 duration-300">
+                        <button onclick="removerRelatorio('${id}')" class="no-print absolute top-2 right-2 text-gray-300 hover:text-red-500 transition-colors p-2">✕</button>
+                        ${a && a.foto_url ? `<img src="${a.foto_url}" class="w-full md:w-24 h-48 md:h-24 rounded-lg object-cover shadow-sm">` : ''}
                         <div class="flex-1 text-justify">
-                            <p class="font-bold text-gray-800">${a.nome.toUpperCase()} (${a.turma})</p>
-                            <p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[a.id]}</p>
+                            <p class="font-bold text-gray-800">${a ? a.nome.toUpperCase() : ''} (${turmaAtiva})</p>
+                            <p class="text-gray-700 text-sm mt-1 leading-relaxed">${relatoriosSalvosMap[id]}</p>
                         </div>
                     </div>
-                `).join('');
-            } else area.classList.add('hidden');
+                `;
+            }).join('');
+            if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
         }
 
         async function removerRelatorio(id) { await sb.from('relatorios').delete().eq('aluno_id', id); delete relatoriosSalvosMap[id]; renderRelatorios(); }
 
-        window.onload = carregar;
+        // Inicialização robusta
+        document.addEventListener('DOMContentLoaded', carregar);
     </script>
 </body>
 </html>
