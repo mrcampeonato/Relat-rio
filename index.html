@@ -70,7 +70,7 @@
         <div class="overflow-x-auto rounded-lg border border-gray-200">
             <table class="w-full text-left bg-white">
                 <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
-                    <tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
+<tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Gênero</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
                 </thead>
                 <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
             </table>
@@ -142,23 +142,40 @@
         }
 
         function abrirModalAluno(id) {
-            const a = alunos.find(al => al.id === id);
-            document.getElementById('modalConteudo').innerHTML = `
-                <div class="relative inline-block w-full text-center">
-                    <img src="${a.foto_url || 'https://via.placeholder.com/200'}" class="w-64 h-64 mx-auto object-cover rounded-2xl border-4 border-indigo-50 shadow-lg">
-                    <label class="absolute bottom-2 right-[calc(50%-110px)] bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md">
-                        ✎ <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
-                    </label>
+    const a = alunos.find(al => al.id === id);
+    document.getElementById('modalConteudo').innerHTML = `
+        <div class="relative inline-block w-full text-center">
+            <img src="${a.foto_url || 'https://via.placeholder.com/200'}" class="w-64 h-64 mx-auto object-cover rounded-2xl border-4 border-indigo-50 shadow-lg">
+            <label class="absolute bottom-2 right-[calc(50%-110px)] bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md">
+                ✎ <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
+            </label>
+        </div>
+        <div class="mt-4 text-left">
+            <label class="text-[10px] font-bold text-gray-400 uppercase">Nome (Toque para editar)</label>
+            <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" 
+                class="w-full text-2xl font-black text-indigo-900 border-b-2 border-gray-100 outline-none pb-1 bg-transparent">
+
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">Turma</label>
+                    <input type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value.trim()); abrirModalAluno('${a.id}');"
+                        class="w-full p-2 border rounded-lg outline-none text-sm">
                 </div>
-                <div class="mt-4 text-left">
-                    <label class="text-[10px] font-bold text-gray-400 uppercase">Nome (Toque para editar)</label>
-                    <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" 
-                        class="w-full text-2xl font-black text-indigo-900 border-b-2 border-gray-100 outline-none pb-1 bg-transparent">
-                    <p class="text-sm text-gray-500 mt-2 uppercase">Turma: ${a.turma} | Perfil: ${a.perfil}</p>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">Gênero</label>
+                    <select onchange="atualizarDado('${a.id}', 'genero', this.value); abrirModalAluno('${a.id}');"
+                        class="w-full p-2 border rounded-lg bg-white text-sm">
+                        <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
+                        <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
+                    </select>
                 </div>
-            `;
-            document.getElementById('modalAluno').classList.add('active');
-        }
+            </div>
+
+            <p class="text-sm text-gray-500 mt-3 uppercase">Perfil: ${a.perfil}</p>
+        </div>
+    `;
+    document.getElementById('modalAluno').classList.add('active');
+}
 
         function fecharModal(e) { if (e && e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active'); }
 
@@ -207,28 +224,34 @@
         }
 
         function renderTabela() {
-            const tbody = document.getElementById('tabelaAlunos');
-            const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
-            if (filtrados.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-400">Nenhum aluno.</td></tr>`; return; }
-            tbody.innerHTML = filtrados.map(a => `
-                <tr class="hover:bg-gray-50 border-b">
-                    <td class="p-2"><img src="${a.foto_url || 'https://via.placeholder.com/50'}" onclick="abrirModalAluno('${a.id}')" class="foto-preview"></td>
-                    <td class="p-2 font-bold text-gray-700 cursor-pointer" onclick="abrirModalAluno('${a.id}')">${a.nome}</td>
-                    <td class="p-2">
-                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full">
-                            <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
-                            <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
-                            <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
-                            <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
-                        </select>
-                    </td>
-                    <td class="p-2 text-center flex justify-center gap-2">
-                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow-md">GERAR</button>
-                        <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    const tbody = document.getElementById('tabelaAlunos');
+    const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
+    if (filtrados.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400">Nenhum aluno.</td></tr>`; return; }
+    tbody.innerHTML = filtrados.map(a => `
+        <tr class="hover:bg-gray-50 border-b">
+            <td class="p-2"><img src="${a.foto_url || 'https://via.placeholder.com/50'}" onclick="abrirModalAluno('${a.id}')" class="foto-preview"></td>
+            <td class="p-2 font-bold text-gray-700 cursor-pointer" onclick="abrirModalAluno('${a.id}')">${a.nome}</td>
+            <td class="p-2">
+                <select onchange="atualizarDado('${a.id}', 'genero', this.value)" class="p-1 border rounded bg-white text-xs w-full">
+                    <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
+                    <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
+                </select>
+            </td>
+            <td class="p-2">
+                <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full">
+                    <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
+                    <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
+                    <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
+                    <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
+                </select>
+            </td>
+            <td class="p-2 text-center flex justify-center gap-2">
+                <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow-md">GERAR</button>
+                <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
+            </td>
+        </tr>
+    `).join('');
+}
 
         async function gerarIndividual(id) {
             const a = alunos.find(al => al.id === id);
