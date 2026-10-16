@@ -62,6 +62,9 @@
         .modal-box { animation: subir .2s ease-out; }        @keyframes subir { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
         @media (min-width: 640px) { .modal { align-items: center; padding: 20px; } }
 
+        /* Popup rápido de confirmação */
+.toast { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 16px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 14px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 70; box-shadow: 0 10px 30px -10px rgba(20,33,61,.5); max-width: calc(100vw - 32px); text-align: center; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
         @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
         @media print { .no-print { display: none !important; } body { background: #fff; } }
     </style>
@@ -76,6 +79,32 @@
         </div>
     </div>
 
+    <!-- CONFIRMAÇÃO DE EXCLUSÃO (do site) -->
+<div id="modalConfirma" class="modal no-print" role="alertdialog" aria-modal="true" aria-labelledby="confirmaTitulo" onclick="if (event.target === this) responderConfirma(false)">
+    <div class="modal-box bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+        <h2 id="confirmaTitulo" class="font-display font-semibold text-xl"></h2>
+        <p id="confirmaTexto" class="mt-2 text-sm" style="color:var(--muted)"></p>
+        <div class="grid grid-cols-2 gap-3 mt-6">
+            <button onclick="responderConfirma(false)" class="btn btn-ghost">Cancelar</button>
+            <button onclick="responderConfirma(true)" class="btn btn-danger">Excluir</button>
+        </div>
+    </div>
+</div>
+<!-- JANELA DE TEXTO (renomear turma) -->
+<div id="modalPrompt" class="modal no-print" role="dialog" aria-modal="true" aria-labelledby="promptTitulo" onclick="if (event.target === this) responderPrompt(false)">
+    <div class="modal-box bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+        <h2 id="promptTitulo" class="font-display font-semibold text-xl"></h2>
+        <label for="promptInput" id="promptTexto" class="label mt-3"></label>
+        <input id="promptInput" type="text" class="field" onkeydown="if (event.key === 'Enter') responderPrompt(true); if (event.key === 'Escape') responderPrompt(false);">
+        <div class="grid grid-cols-2 gap-3 mt-6">
+            <button onclick="responderPrompt(false)" class="btn btn-ghost">Cancelar</button>
+            <button onclick="responderPrompt(true)" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+</div>
+<!-- POPUP RÁPIDO -->
+<div id="toast" class="toast no-print" role="status" aria-live="polite"></div>
+    
     <!-- CABEÇALHO / MENU -->
 <header class="no-print sticky top-0 z-40 bg-white/90 backdrop-blur border-b" style="border-color:var(--line)">
     <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -186,22 +215,27 @@
         }
 
         async function salvarIndividual() {
-            const nome = document.getElementById('nomeInd').value.trim();
-            const turma = document.getElementById('turmaInd').value.trim();
-            if (!nome || !turma) return alert("Preencha Nome e Turma!");
-            await sb.from('alunos').insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value }]);
-            document.getElementById('nomeInd').value = ""; await carregar(turma);
-        }
+    const nome = document.getElementById('nomeInd').value.trim();
+    const turma = document.getElementById('turmaInd').value.trim();
+    if (!nome || !turma) return mostrarToast('Preencha nome e turma.');
+    const { error } = await sb.from('alunos').insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value }]);
+    if (error) return mostrarToast('Não foi possível salvar. Tente de novo.');
+    document.getElementById('nomeInd').value = "";
+    await carregar(turma);
+    mostrarToast('Aluno cadastrado com sucesso!');
+}
 
-        async function salvarMassa() {
-            const texto = document.getElementById('bulkAlunos').value.trim();
-            const turma = document.getElementById('turmaBulk').value.trim();
-            if (!texto || !turma) return alert("Preencha!");
-            const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: 'masc', perfil: 'participativo' }));
-            await sb.from('alunos').insert(novos);
-            document.getElementById('bulkAlunos').value = ""; document.getElementById('turmaBulk').value = "";
-            await carregar(turma);
-        }
+async function salvarMassa() {
+    const texto = document.getElementById('bulkAlunos').value.trim();
+    const turma = document.getElementById('turmaBulk').value.trim();
+    if (!texto || !turma) return mostrarToast('Preencha os nomes e a turma.');
+    const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: 'masc', perfil: 'participativo' }));
+    const { error } = await sb.from('alunos').insert(novos);
+    if (error) return mostrarToast('Não foi possível importar. Tente de novo.');
+    document.getElementById('bulkAlunos').value = ""; document.getElementById('turmaBulk').value = "";
+    await carregar(turma);
+    mostrarToast(novos.length === 1 ? '1 aluno cadastrado com sucesso!' : `${novos.length} alunos cadastrados com sucesso!`);
+}
 
         async function atualizarDado(id, campo, valor) {
             const aluno = alunos.find(a => a.id === id);
@@ -216,8 +250,8 @@
     const a = alunos.find(al => al.id === id);
     document.getElementById('modalConteudo').innerHTML = `
         <div class="relative inline-block w-full text-center">
-            <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-56 h-56 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
-            <label class="absolute bottom-2 right-[calc(50%-104px)] btn btn-primary btn-sm !min-h-[40px] !px-3 shadow-md" title="Trocar foto">
+            <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-44 h-44 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
+            <label class="absolute bottom-2 right-[calc(50%-80px)] btn btn-primary btn-sm !min-h-[40px] !px-3 shadow-md" title="Trocar foto">
                 Trocar foto <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
             </label>
         </div>
@@ -238,7 +272,16 @@
                     </select>
                 </div>
             </div>
-            <p class="text-sm mt-4" style="color:var(--muted)">Perfil: ${a.perfil}</p>
+
+            <div class="mt-4">
+                <label class="label" for="mPerfil">Perfil</label>
+                <select id="mPerfil" onchange="atualizarDado('${a.id}', 'perfil', this.value); abrirModalAluno('${a.id}');" class="field">
+                    <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
+                    <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco participativo</option>
+                    <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
+                    <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
+                </select>
+            </div>
         </div>
     `;
     document.getElementById('modalAluno').classList.add('active');
@@ -269,6 +312,51 @@ function rolarAte(id) {
         setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-300'), 1600);
     }));
 }
+
+let toastTimer;
+function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+let confirmaResolver = null;
+function confirmarSite(titulo, texto) {
+    return new Promise(resolve => {
+        confirmaResolver = resolve;
+        document.getElementById('confirmaTitulo').textContent = titulo;
+        document.getElementById('confirmaTexto').textContent = texto;
+        document.getElementById('modalConfirma').classList.add('active');
+    });
+}
+function responderConfirma(ok) {
+    document.getElementById('modalConfirma').classList.remove('active');
+    if (confirmaResolver) { confirmaResolver(ok); confirmaResolver = null; }
+}
+let promptResolver = null;
+function promptSite(titulo, texto, valorInicial = '') {
+    return new Promise(resolve => {
+        promptResolver = resolve;
+        document.getElementById('promptTitulo').textContent = titulo;
+        document.getElementById('promptTexto').textContent = texto;
+        const input = document.getElementById('promptInput');
+        input.value = valorInicial;
+        document.getElementById('modalPrompt').classList.add('active');
+        setTimeout(() => { input.focus(); input.select(); }, 50);
+    });
+}
+function responderPrompt(ok) {
+    const valor = document.getElementById('promptInput').value;
+    document.getElementById('modalPrompt').classList.remove('active');
+    if (promptResolver) { promptResolver(ok ? valor : null); promptResolver = null; }
+}
+function irParaRelatorio(id) {
+    if (!relatoriosSalvosMap[id]) return mostrarToast('Esse aluno ainda não tem relatório. Clique em Gerar.');
+    rolarAte(id);
+}
+        
         // Reduz a foto e salva em WebP: página e banco ficam bem mais leves
         function comprimirFoto(file) {
             return new Promise(resolve => {
@@ -300,24 +388,29 @@ function rolarAte(id) {
         }
 
         async function renomearTurma() {
-            const novo = prompt(`Novo nome para "${turmaAtiva}":`);
-            if (novo && novo.trim() !== "") {
-                const nomeLimpo = novo.trim();
-                await sb.from('alunos').update({ turma: nomeLimpo }).eq('turma', turmaAtiva);
-                await carregar(nomeLimpo);
-            }
-        }
+    const novo = await promptSite('Renomear turma', `Novo nome para "${turmaAtiva}":`, turmaAtiva);
+    if (novo && novo.trim() !== "") {
+        const nomeLimpo = novo.trim();
+        await sb.from('alunos').update({ turma: nomeLimpo }).eq('turma', turmaAtiva);
+        await carregar(nomeLimpo);
+    }
+}
 
-        async function excluirTurma() {
-            if (confirm(`Excluir toda a turma "${turmaAtiva}"?`)) {
-                await sb.from('alunos').delete().eq('turma', turmaAtiva);
-                turmaAtiva = "";
-                await carregar();
-            }
-        }
+async function excluirTurma() {
+    const ok = await confirmarSite('Excluir turma?', `A turma "${turmaAtiva}" e todos os seus alunos serão removidos. Essa ação não pode ser desfeita.`);
+    if (!ok) return;
+    await sb.from('alunos').delete().eq('turma', turmaAtiva);
+    turmaAtiva = "";
+    await carregar();
+}
 
-        async function remover(id) { if (confirm("Excluir?")) { await sb.from('alunos').delete().eq('id', id); await carregar(turmaAtiva); } }
-
+async function remover(id) {
+    const a = alunos.find(al => al.id === id);
+    const ok = await confirmarSite('Excluir aluno?', `${a ? a.nome : 'Este aluno'} será removido da turma. Essa ação não pode ser desfeita.`);
+    if (!ok) return;
+    await sb.from('alunos').delete().eq('id', id);
+    await carregar(turmaAtiva);
+}
         function renderTabs() {
     const container = document.getElementById('abasContainer');
     const acoes = document.getElementById('acoesTurma');
@@ -331,22 +424,15 @@ function rolarAte(id) {
         function renderTabela() {
     const tbody = document.getElementById('tabelaAlunos');
     const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
-    if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Novo cadastro.</p>`; return; }
+    if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Use a aba Cadastrar.</p>`; return; }
     tbody.innerHTML = filtrados.map(a => `
         <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
             <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" loading="lazy" onclick="abrirModalAluno('${a.id}')" class="foto-preview">
             <button onclick="abrirModalAluno('${a.id}')" class="flex-1 min-w-[140px] text-left font-semibold text-base hover:underline">${a.nome}</button>
-            <select aria-label="Gênero de ${a.nome}" onchange="atualizarDado('${a.id}', 'genero', this.value)" class="field field-sm w-auto">
-                <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
-                <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
-            </select>
-            <select aria-label="Perfil de ${a.nome}" onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="field field-sm w-auto">
-                <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
-                <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco part.</option>
-                <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
-                <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
-            </select>
             <div class="flex gap-2 ml-auto">
+                <button onclick="irParaRelatorio('${a.id}')" class="btn btn-ghost btn-sm !px-3" aria-label="Ver relatório de ${a.nome}" title="Ver relatório">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
+                </button>
                 <button onclick="gerarIndividual('${a.id}')" class="btn btn-primary btn-sm">Gerar</button>
                 <button onclick="remover('${a.id}')" class="btn btn-danger btn-sm" aria-label="Excluir ${a.nome}">Excluir</button>
             </div>
@@ -393,8 +479,14 @@ async function gerarTurmaToda() {
     if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
 }
 
-        async function removerRelatorio(id) { await sb.from('relatorios').delete().eq('aluno_id', id); delete relatoriosSalvosMap[id]; renderRelatorios(); }
-
+async function removerRelatorio(id) {
+    const a = alunos.find(al => al.id === id);
+    const ok = await confirmarSite('Excluir relatório?', `O relatório de ${a ? a.nome : 'este aluno'} será apagado. Você pode gerar outro depois.`);
+    if (!ok) return;
+    await sb.from('relatorios').delete().eq('aluno_id', id);
+    delete relatoriosSalvosMap[id];
+    renderRelatorios();
+}
         window.onload = carregar;
     </script>
 </body>
