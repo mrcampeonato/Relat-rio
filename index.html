@@ -145,7 +145,10 @@
         <section id="resultadoArea" class="card p-5 md:p-8 hidden print:block print:border-0">
             <div class="flex justify-between items-center gap-4 mb-6 no-print">
                 <h2 class="font-display font-semibold text-2xl">Relatórios gerados</h2>
-                <button onclick="window.print()" class="btn btn-ghost">Imprimir / PDF</button>
+                <div class="flex gap-2">
+    <button onclick="copiarRelatorios()" class="btn btn-ghost">Copiar</button>
+    <button onclick="window.print()" class="btn btn-ghost">Imprimir / PDF</button>
+</div>
             </div>
             <div id="listaRelatorios" class="space-y-4"></div>
         </section>
@@ -355,6 +358,32 @@ function responderPrompt(ok) {
 function irParaRelatorio(id) {
     if (!relatoriosSalvosMap[id]) return mostrarToast('Esse aluno ainda não tem relatório. Clique em Gerar.');
     rolarAte(id);
+}
+        async function copiarRelatorios() {
+    const lista = alunos
+        .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+    if (lista.length === 0) return mostrarToast('Não há relatórios para copiar.');
+
+    const texto = turmaAtiva + '\n\n' + lista
+        .map(a => `${a.nome.toUpperCase()}\n${relatoriosSalvosMap[a.id]}`)
+        .join('\n\n');
+
+    try {
+        await navigator.clipboard.writeText(texto);
+    } catch (e) {
+        // Plano B para navegadores que bloqueiam a área de transferência
+        const t = document.createElement('textarea');
+        t.value = texto;
+        t.style.position = 'fixed';
+        t.style.opacity = '0';
+        document.body.appendChild(t);
+        t.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(t);
+        if (!ok) return mostrarToast('Não foi possível copiar.');
+    }
+    mostrarToast('Relatórios copiados!');
 }
         
         // Reduz a foto e salva em WebP: página e banco ficam bem mais leves
