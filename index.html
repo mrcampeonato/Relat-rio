@@ -59,8 +59,7 @@
         /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(20,33,61,.6); z-index: 50; align-items: flex-end; justify-content: center; padding: 0; }
         .modal.active { display: flex; }
-        .modal-box { animation: subir .2s ease-out; max-height: 92vh; overflow-y: auto; }
-        @keyframes subir { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .modal-box { animation: subir .2s ease-out; }        @keyframes subir { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
         @media (min-width: 640px) { .modal { align-items: center; padding: 20px; } }
 
         @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
@@ -83,7 +82,7 @@
             <a href="#" class="font-display font-bold text-lg" style="color:var(--ink)">Ed. Física</a>
             <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Principal">
                 <a href="#alunos" class="px-3 py-2 rounded-lg hover:bg-gray-100">Alunos</a>
-                <a href="#cadastro" class="px-3 py-2 rounded-lg hover:bg-gray-100">Cadastrar</a>
+                <a href="#cadastro" onclick="abrirCadastro(event)" class="px-3 py-2 rounded-lg hover:bg-gray-100">Cadastrar</a>
                 <a href="#resultadoArea" class="px-3 py-2 rounded-lg hover:bg-gray-100">Relatórios</a>
             </nav>
         </div>
@@ -113,7 +112,7 @@
         </div>
 
         <!-- CADASTRO -->
-        <section id="cadastro" class="no-print">
+        <section id="cadastro" class="no-print hidden">
             <h2 class="font-display font-semibold text-2xl">Cadastrar alunos</h2>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 <div class="card p-5 md:p-6 space-y-4">
@@ -242,7 +241,12 @@
 }
 
         function fecharModal(e) { if (e && e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active'); }
-
+function abrirCadastro(e) {
+    e.preventDefault();
+    const sec = document.getElementById('cadastro');
+    sec.classList.toggle('hidden');
+    if (!sec.classList.contains('hidden')) sec.scrollIntoView({ behavior: 'smooth' });
+}
         // Reduz a foto e salva em WebP: página e banco ficam bem mais leves
         function comprimirFoto(file) {
             return new Promise(resolve => {
@@ -328,19 +332,25 @@
     `).join('');
 }
 
-        async function gerarIndividual(id) {
-            const a = alunos.find(al => al.id === id);
-            const opcoes = frasesLongas[a.perfil][a.genero];
-            const fraseEscolhida = opcoes[Math.floor(Math.random() * opcoes.length)];
-            const textoFinal = `${a.nome} ${fraseEscolhida}`;
+        async function gerarIndividual(id, rolar = true) {
+    const a = alunos.find(al => al.id === id);
+    const opcoes = frasesLongas[a.perfil][a.genero];
+    const fraseEscolhida = opcoes[Math.floor(Math.random() * opcoes.length)];
+    const textoFinal = `${a.nome} ${fraseEscolhida}`;
 
-            await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
-            relatoriosSalvosMap[id] = textoFinal;
-            renderRelatorios();
-            document.getElementById('resultadoArea').scrollIntoView({ behavior: 'smooth' });
-        }
+    await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
+    relatoriosSalvosMap[id] = textoFinal;
+    renderRelatorios();
+    if (rolar) {
+        const alvo = document.getElementById('rel-' + id) || document.getElementById('resultadoArea');
+        alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
 
-        function gerarTurmaToda() { alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id)); }
+async function gerarTurmaToda() {
+    await Promise.all(alunos.filter(a => a.turma === turmaAtiva).map(a => gerarIndividual(a.id, false)));
+    document.getElementById('resultadoArea').scrollIntoView({ behavior: 'smooth' });
+}
 
        function renderRelatorios() {
     const area = document.getElementById('resultadoArea');
