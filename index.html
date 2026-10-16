@@ -306,9 +306,9 @@ async function salvarMassa() {
         function abrirModalAluno(id) {
     const a = alunos.find(al => al.id === id);
     document.getElementById('modalConteudo').innerHTML = `
-        <div class="relative inline-block w-full text-center">
+                       <div class="w-full text-center">
             <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-44 h-44 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
-            <label class="absolute bottom-2 right-[calc(50%-80px)] btn btn-primary btn-sm !min-h-[40px] !px-3 shadow-md" title="Trocar foto">
+            <label class="btn btn-primary btn-sm mt-3 cursor-pointer" title="Trocar foto">
                 Trocar foto <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
             </label>
         </div>
