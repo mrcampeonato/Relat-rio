@@ -17,7 +17,41 @@
 </head>
 <body class="bg-gray-50 p-2 md:p-8 font-sans">
 
-    <!-- MODAL DE DETALHES -->
+    <!-- TELA DE LOGIN -->
+    <div id="loginModal" class="modal active z-50">
+        <div class="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl">
+            <h2 class="text-2xl font-black text-indigo-900 mb-6 text-center">Acesso ao Sistema</h2>
+            <form ongradient id="loginForm" onsubmit="realizarLogin(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">E-mail</label>
+                    <input type="email" id="loginEmail" value="mrcampeonato3@gmail.com" required class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Senha</label>
+                    <input type="password" id="loginSenha" value="123456" required class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Entrar</button>
+                <p id="loginErro" class="text-red-500 text-xs text-center mt-2"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE ALTERAR SENHA -->
+    <div id="modalSenha" class="modal no-print" onclick="fecharModalSenha(event)">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Alterar Senha</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Nova Senha</label>
+                    <input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button onclick="salvarNovaSenha()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Atualizar Senha</button>
+                <button onclick="document.getElementById('modalSenha').classList.remove('active')" class="w-full bg-gray-100 text-gray-600 py-2 rounded-xl font-bold">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DETALHES DO ALUNO -->
     <div id="modalAluno" class="modal no-print" onclick="fecharModal(event)">
         <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl" onclick="event.stopPropagation()">
             <div id="modalConteudo"></div>
@@ -25,58 +59,67 @@
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
-        <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4">Gerador de Relatórios: Ed. Física</h1>
-
-        <!-- CADASTRO -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
-                <h2 class="font-bold text-indigo-800">Cadastro Individual</h2>
-                <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg outline-none">
-                <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg outline-none">
-                <div class="grid grid-cols-2 gap-2">
-                    <select id="generoInd" class="p-2 border rounded-lg bg-white"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
-                    <select id="perfilInd" class="p-2 border rounded-lg bg-white">
-                        <option value="participativo">Participativo</option><option value="pouco_participativo">Pouco Part.</option>
-                        <option value="agitado">Agitado</option><option value="melhorar">Melhorar</option>
-                    </select>
+    <!-- CONTEÚDO PRINCIPAL (Protegido por Login) -->
+    <div id="appContainer" class="hidden">
+        <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
+            <div class="flex justify-between items-center mb-6 border-b pb-4 flex-wrap gap-4">
+                <h1 class="text-2xl font-black text-gray-800">Gerador de Relatórios: Ed. Física</h1>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('modalSenha').classList.add('active')" class="bg-gray-100 text-gray-700 text-xs px-3 py-2 rounded-xl font-bold hover:bg-gray-200">Alterar Senha</button>
+                    <button onclick="realizarLogout()" class="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-xl font-bold hover:bg-red-100">Sair</button>
                 </div>
-                <button onclick="salvarIndividual()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition">Salvar Aluno</button>
             </div>
-            
-            <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                <h2 class="font-bold text-emerald-800 mb-2">Importar Lista (Massa)</h2>
-                <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none"></textarea>
-                <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2 outline-none">
-                <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
+
+            <!-- CADASTRO -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
+                    <h2 class="font-bold text-indigo-800">Cadastro Individual</h2>
+                    <input type="text" id="nomeInd" placeholder="Nome do Aluno" class="w-full p-2 border rounded-lg outline-none">
+                    <input type="text" id="turmaInd" placeholder="Turma (ex: 6º Ano A)" class="w-full p-2 border rounded-lg outline-none">
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="generoInd" class="p-2 border rounded-lg bg-white"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
+                        <select id="perfilInd" class="p-2 border rounded-lg bg-white">
+                            <option value="participativo">Participativo</option><option value="pouco_participativo">Pouco Part.</option>
+                            <option value="agitado">Agitado</option><option value="melhorar">Melhorar</option>
+                        </select>
+                    </div>
+                    <button onclick="salvarIndividual()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition">Salvar Aluno</button>
+                </div>
+                
+                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                    <h2 class="font-bold text-emerald-800 mb-2">Importar Lista (Massa)</h2>
+                    <textarea id="bulkAlunos" placeholder="Nomes (um por linha)" class="w-full p-2 border rounded-lg h-20 mb-2 outline-none"></textarea>
+                    <input type="text" id="turmaBulk" placeholder="Turma para este lote" class="w-full p-2 border rounded-lg mb-2 outline-none">
+                    <button onclick="salvarMassa()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-lg hover:bg-emerald-700 transition">Importar Todos</button>
+                </div>
             </div>
+
+            <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
+
+            <div id="acoesTurma" class="flex gap-2 mb-4 justify-end hidden">
+                <button onclick="renomearTurma()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg">Renomear Turma</button>
+                <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg font-bold">Excluir Turma</button>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="w-full text-left bg-white">
+                    <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
+                        <tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
+                    </thead>
+                    <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
+                </table>
+            </div>
+            <button onclick="gerarTurmaToda()" class="mt-6 w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg">Gerar Relatórios da Turma</button>
         </div>
 
-        <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
-
-        <div id="acoesTurma" class="flex gap-2 mb-4 justify-end hidden">
-            <button onclick="renomearTurma()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg">Renomear Turma</button>
-            <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg font-bold">Excluir Turma</button>
+        <!-- RESULTADOS -->
+        <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0 print:shadow-none">
+            <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
+                <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
+                <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
+            </div>
+            <div id="listaRelatorios" class="space-y-6"></div>
         </div>
-
-        <div class="overflow-x-auto rounded-lg border border-gray-200">
-            <table class="w-full text-left bg-white">
-                <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
-                    <tr><th class="p-3">Foto</th><th class="p-3">Nome</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr>
-                </thead>
-                <tbody id="tabelaAlunos" class="divide-y text-sm"></tbody>
-            </table>
-        </div>
-        <button onclick="gerarTurmaToda()" class="mt-6 w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg">Gerar Relatórios da Turma</button>
-    </div>
-
-    <!-- RESULTADOS -->
-    <div id="resultadoArea" class="max-w-4xl mx-auto mt-8 p-4 md:p-6 bg-white rounded-2xl shadow-lg border hidden print:block print:mt-0 print:shadow-none">
-        <div class="flex justify-between items-center mb-6 no-print border-b pb-4">
-            <h2 class="text-xl font-bold text-gray-800">Relatórios Gerados</h2>
-            <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold">Imprimir / PDF</button>
-        </div>
-        <div id="listaRelatorios" class="space-y-6"></div>
     </div>
 
     <script>
@@ -95,6 +138,58 @@
             melhorar: { masc: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
         };
 
+        // --- SISTEMA DE AUTENTICAÇÃO ---
+        async function verificarSessao() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                document.getElementById('loginModal').classList.remove('active');
+                document.getElementById('appContainer').classList.remove('hidden');
+                carregar();
+            } else {
+                document.getElementById('loginModal').classList.add('active');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        async function realizarLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const senha = document.getElementById('loginSenha').value.trim();
+            const erroEl = document.getElementById('loginErro');
+
+            const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+            if (error) {
+                erroEl.innerText = "E-mail ou senha incorretos.";
+            } else {
+                erroEl.innerText = "";
+                verificarSessao();
+            }
+        }
+
+        async function realizarLogout() {
+            await sb.auth.signOut();
+            verificarSessao();
+        }
+
+        async function salvarNovaSenha() {
+            const novaSenha = document.getElementById('novaSenha').value.trim();
+            if (!novaSenha || novaSenha.length < 6) return alert("A senha deve ter pelo menos 6 caracteres.");
+            
+            const { error } = await sb.auth.updateUser({ password: novaSenha });
+            if (error) {
+                alert("Erro ao atualizar senha: " + error.message);
+            } else {
+                alert("Senha alterada com sucesso!");
+                document.getElementById('modalSenha').classList.remove('active');
+                document.getElementById('novaSenha').value = "";
+            }
+        }
+
+        function fecharModalSenha(e) {
+            if (e && e.target.id === 'modalSenha') document.getElementById('modalSenha').classList.remove('active');
+        }
+
+        // --- FUNÇÕES DO APP ---
         function comprimirImagem(file, callback) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -278,7 +373,7 @@
 
         async function removerRelatorio(id) { await sb.from('relatorios').delete().eq('aluno_id', id); delete relatoriosSalvosMap[id]; renderRelatorios(); }
 
-        window.onload = carregar;
+        window.onload = verificarSessao;
     </script>
 </body>
 </html>
