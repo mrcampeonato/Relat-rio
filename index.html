@@ -10,15 +10,26 @@
     <style>
         @media print { .no-print { display: none; } }
         .aba-ativa { border-bottom: 3px solid #4f46e5; font-weight: bold; color: #4f46e5; }
-        .foto-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
-        .foto-preview:hover { border-color: #4f46e5; transform: scale(1.05); }
-        @media (max-width: 640px) {
-            .tabela-mobile { font-size: 0.75rem; }
-            .btn-mobile { padding: 4px 8px; font-size: 0.7rem; }
-        }
+        .foto-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+        .modal.active { display: flex; }
     </style>
 </head>
 <body class="bg-gray-50 p-2 md:p-8 font-sans">
+
+    <!-- MODAL DE DETALHES DO ALUNO -->
+    <div id="modalAluno" class="modal no-print" onclick="fecharModal(event)">
+        <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Detalhes do Aluno</h3>
+                <button onclick="fecharModal(null)" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div id="modalConteudo" class="space-y-4 text-center">
+                <!-- Preenchido via JS -->
+            </div>
+            <button onclick="fecharModal(null)" class="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-bold">Fechar e Salvar</button>
+        </div>
+    </div>
 
     <div class="max-w-6xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-gray-100 no-print">
         <h1 class="text-2xl font-black mb-6 text-gray-800 border-b pb-4 text-center md:text-left">Gerador de Relatórios: Ed. Física</h1>
@@ -54,17 +65,15 @@
             </div>
         </div>
 
-        <!-- ABAS -->
         <div id="abasContainer" class="flex gap-4 mb-2 overflow-x-auto border-b pb-2"></div>
 
-        <!-- AÇÕES DA TURMA -->
         <div id="acoesTurma" class="flex gap-2 mb-4 justify-end hidden">
-            <button onclick="renomearTurma()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-200">Renomear Turma</button>
-            <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg hover:bg-red-100 font-bold">Excluir Turma</button>
+            <button onclick="renomearTurma()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg">Renomear Turma</button>
+            <button onclick="excluirTurma()" class="text-xs bg-red-50 text-red-500 px-3 py-1 rounded-lg font-bold">Excluir Turma</button>
         </div>
 
         <div class="overflow-x-auto rounded-lg border border-gray-200">
-            <table class="w-full text-left bg-white tabela-mobile">
+            <table class="w-full text-left bg-white">
                 <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
                     <tr>
                         <th class="p-2 md:p-3">Foto</th>
@@ -78,7 +87,7 @@
         </div>
         
         <div class="mt-6 flex justify-center md:justify-end">
-            <button onclick="gerarTurmaToda()" class="w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition">Gerar Relatórios da Turma</button>
+            <button onclick="gerarTurmaToda()" class="w-full md:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg">Gerar Relatórios da Turma</button>
         </div>
     </div>
 
@@ -107,6 +116,26 @@
             melhorar: { masc: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades.", fem: "tem se dedicado com esforço em suas atividades práticas. Focamos em fortalecer sua coordenação motora e confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes no desenvolvimento de suas habilidades." }
         };
 
+        // Função para comprimir imagem (Melhora muito a velocidade do site)
+        function comprimirImagem(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 400; // Tamanho otimizado
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    callback(canvas.toDataURL('image/jpeg', 0.7)); // Qualidade 70%
+                };
+            };
+        }
+
         async function carregar() {
             const { data: dataAlunos, error: errA } = await sb.from('alunos').select('*').order('nome');
             if (errA) return console.error(errA);
@@ -126,8 +155,7 @@
             const nome = document.getElementById('nomeInd').value.trim();
             const turma = document.getElementById('turmaInd').value.trim();
             if (!nome || !turma) return alert("Preencha Nome e Turma!");
-            const novo = { nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value };
-            await sb.from('alunos').insert([novo]);
+            await sb.from('alunos').insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil: document.getElementById('perfilInd').value }]);
             document.getElementById('nomeInd').value = "";
             carregar();
         }
@@ -143,55 +171,69 @@
         }
 
         async function atualizarDado(id, campo, valor) {
-            // Atualiza localmente imediato para evitar que o seletor "volte"
             const aluno = alunos.find(a => a.id === id);
-            if (aluno) aluno[campo] = valor;
-            
-            renderTabela(); // Re-renderiza a tabela para fixar o valor no seletor
+            if (aluno) {
+                aluno[campo] = valor;
+                await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
+                if (campo === 'turma') carregar(); else renderTabela(); renderRelatorios();
+            }
+        }
 
-            // Salva no banco em segundo plano
-            const { error } = await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
-            if (error) {
-                alert("Erro ao salvar no banco!");
-                carregar(); // Se der erro, volta ao que estava no banco
+        function abrirModalAluno(id) {
+            const a = alunos.find(al => al.id === id);
+            const modal = document.getElementById('modalAluno');
+            const conteudo = document.getElementById('modalConteudo');
+            
+            conteudo.innerHTML = `
+                <div class="relative inline-block group">
+                    <img src="${a.foto_url || 'https://via.placeholder.com/200'}" class="w-64 h-64 mx-auto object-cover rounded-2xl shadow-lg border-4 border-indigo-100">
+                    <label class="absolute bottom-2 right-2 bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md">
+                        ✎ <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
+                    </label>
+                </div>
+                <div class="text-left mt-4">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Nome do Aluno (Editável)</label>
+                    <input type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value)" 
+                        class="w-full text-2xl font-black text-indigo-900 border-b-2 border-gray-100 focus:border-indigo-400 outline-none pb-1">
+                </div>
+                <div class="text-left bg-gray-50 p-3 rounded-xl">
+                    <p class="text-sm text-gray-600"><strong>Perfil:</strong> ${a.perfil.replace('_',' ')}</p>
+                    <p class="text-sm text-gray-600"><strong>Turma:</strong> ${a.turma}</p>
+                </div>
+            `;
+            modal.classList.add('active');
+        }
+
+        function fecharModal(e) {
+            if (!e || e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active');
+        }
+
+        async function alterarFoto(input, id, doModal = false) {
+            if (input.files && input.files[0]) {
+                comprimirImagem(input.files[0], async (base64compresso) => {
+                    const aluno = alunos.find(a => a.id === id);
+                    if (aluno) {
+                        aluno.foto_url = base64compresso;
+                        await sb.from('alunos').update({ foto_url: base64compresso }).eq('id', id);
+                        if(doModal) abrirModalAluno(id); // Recarrega o modal com a foto nova
+                        else renderTabela();
+                        renderRelatorios();
+                    }
+                });
             }
         }
 
         async function renomearTurma() {
-            const novoNome = prompt(`Novo nome para a turma "${turmaAtiva}":`);
-            if (novoNome && novoNome.trim() !== "") {
-                await sb.from('alunos').update({ turma: novoNome.trim() }).eq('turma', turmaAtiva);
-                turmaAtiva = novoNome.trim();
-                carregar();
-            }
+            const novo = prompt(`Novo nome para "${turmaAtiva}":`);
+            if (novo) { await sb.from('alunos').update({ turma: novo.trim() }).eq('turma', turmaAtiva); turmaAtiva = novo.trim(); carregar(); }
         }
 
         async function excluirTurma() {
-            if (confirm(`Excluir TODOS os alunos da turma "${turmaAtiva}"?`)) {
-                await sb.from('alunos').delete().eq('turma', turmaAtiva);
-                turmaAtiva = "";
-                carregar();
-            }
-        }
-
-        async function alterarFoto(input, id) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const aluno = alunos.find(a => a.id === id);
-                    if (aluno) aluno.foto_url = e.target.result;
-                    renderTabela();
-                    await sb.from('alunos').update({ foto_url: e.target.result }).eq('id', id);
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
+            if (confirm(`Excluir toda a turma "${turmaAtiva}"?`)) { await sb.from('alunos').delete().eq('turma', turmaAtiva); turmaAtiva = ""; carregar(); }
         }
 
         async function remover(id) {
-            if (confirm("Excluir este aluno?")) {
-                await sb.from('alunos').delete().eq('id', id);
-                carregar();
-            }
+            if (confirm("Excluir este aluno?")) { await sb.from('alunos').delete().eq('id', id); carregar(); }
         }
 
         function renderTabs() {
@@ -200,36 +242,28 @@
             const turmas = [...new Set(alunos.map(a => a.turma))].sort();
             if (turmas.length > 0) {
                 acoes.classList.remove('hidden');
-                container.innerHTML = turmas.map(t => `<button onclick="mudarTurma('${t}')" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
-            } else {
-                acoes.classList.add('hidden'); container.innerHTML = "";
-            }
+                container.innerHTML = turmas.map(t => `<button onclick="turmaAtiva='${t}'; renderTabs(); renderTabela(); renderRelatorios();" class="pb-2 px-4 text-xs md:text-sm whitespace-nowrap ${turmaAtiva === t ? 'aba-ativa' : 'text-gray-400'}">${t}</button>`).join('');
+            } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
         }
-
-        function mudarTurma(t) { turmaAtiva = t; renderTabs(); renderTabela(); renderRelatorios(); }
 
         function renderTabela() {
             const tbody = document.getElementById('tabelaAlunos');
             tbody.innerHTML = alunos.filter(a => a.turma === turmaAtiva).map(a => `
                 <tr class="hover:bg-gray-50 border-b">
                     <td class="p-2">
-                        <label class="block w-10 h-10 relative">
-                            <img src="${a.foto_url || 'https://via.placeholder.com/50'}" class="foto-preview">
-                            <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}')">
-                        </label>
+                        <img src="${a.foto_url || 'https://via.placeholder.com/50'}" onclick="abrirModalAluno('${a.id}')" class="foto-preview">
                     </td>
-                    <td class="p-2 font-bold text-gray-700">${a.nome}</td>
+                    <td class="p-2 font-bold text-gray-700 cursor-pointer" onclick="abrirModalAluno('${a.id}')">${a.nome}</td>
                     <td class="p-2">
-                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full min-w-[100px]">
-                            <option value="participative" disabled>Selecione...</option>
+                        <select onchange="atualizarDado('${a.id}', 'perfil', this.value)" class="p-1 border rounded bg-white text-xs w-full">
                             <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
                             <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco Part.</option>
                             <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
                             <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
                         </select>
                     </td>
-                    <td class="p-2 text-center flex justify-center gap-1 md:gap-2">
-                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-[10px] md:text-xs font-bold btn-mobile shadow-md">GERAR</button>
+                    <td class="p-2 text-center flex justify-center gap-2">
+                        <button onclick="gerarIndividual('${a.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold shadow-md">GERAR</button>
                         <button onclick="remover('${a.id}')" class="text-red-500 p-1">✕</button>
                     </td>
                 </tr>
@@ -244,15 +278,7 @@
             renderRelatorios();
         }
 
-        function gerarTurmaToda() {
-            alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id));
-        }
-
-        async function removerRelatorio(id) {
-            await sb.from('relatorios').delete().eq('aluno_id', id);
-            delete relatoriosSalvosMap[id];
-            renderRelatorios();
-        }
+        function gerarTurmaToda() { alunos.filter(a => a.turma === turmaAtiva).forEach(a => gerarIndividual(a.id)); }
 
         function renderRelatorios() {
             const area = document.getElementById('resultadoArea');
@@ -273,6 +299,8 @@
             }).join('');
             if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else { area.classList.add('hidden'); }
         }
+
+        async function removerRelatorio(id) { await sb.from('relatorios').delete().eq('aluno_id', id); delete relatoriosSalvosMap[id]; renderRelatorios(); }
 
         window.onload = carregar;
     </script>
