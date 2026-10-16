@@ -70,7 +70,26 @@
     </style>
 </head>
 <body>
-
+<!-- INÍCIO LOGIN -->
+<div id="telaLogin" class="no-print fixed inset-0 grid place-items-center p-4" style="z-index:100; background:var(--bg)" role="dialog" aria-modal="true" aria-labelledby="loginTitulo">
+    <div class="card w-full max-w-sm p-6 md:p-8 space-y-4 shadow-xl">
+        <div>
+            <h1 id="loginTitulo" class="font-display font-bold text-2xl">Ed. Física</h1>
+            <p class="mt-1 text-sm" style="color:var(--muted)">Entre para acessar seus relatórios.</p>
+        </div>
+        <div>
+            <label class="label" for="loginEmail">E-mail</label>
+            <input id="loginEmail" type="email" class="field" autocomplete="username" onkeydown="if (event.key === 'Enter') document.getElementById('loginSenha').focus()">
+        </div>
+        <div>
+            <label class="label" for="loginSenha">Senha</label>
+            <input id="loginSenha" type="password" class="field" autocomplete="current-password" onkeydown="if (event.key === 'Enter') entrar()">
+        </div>
+        <p id="loginErro" class="text-sm min-h-[20px]" style="color:#b42318" role="alert"></p>
+        <button id="loginBtn" onclick="entrar()" class="btn btn-primary w-full">Entrar</button>
+    </div>
+</div>
+<!-- FIM LOGIN -->
     <!-- MODAL DE DETALHES -->
     <div id="modalAluno" class="modal no-print" onclick="fecharModal(event)" role="dialog" aria-modal="true" aria-label="Detalhes do aluno">
         <div class="modal-box bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
@@ -111,8 +130,8 @@
         <a href="#" onclick="mostrarAba('alunos'); return false;" class="font-display font-bold text-lg" style="color:var(--ink)">Ed. Física</a>
         <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Principal">
             <button id="nav-alunos" onclick="mostrarAba('alunos')" aria-current="page" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 bg-indigo-50 text-indigo-700">Alunos</button>
-            <button id="nav-cadastro" onclick="mostrarAba('cadastro')" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100">Cadastrar</button>
-        </nav>
+<button id="nav-cadastro" onclick="mostrarAba('cadastro')" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100">Cadastrar</button>
+<button onclick="sair()" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 text-gray-500">Sair</button>        </nav>
     </div>
 </header>
 
@@ -516,7 +535,43 @@ async function removerRelatorio(id) {
     delete relatoriosSalvosMap[id];
     renderRelatorios();
 }
-        window.onload = carregar;
+// INÍCIO AUTH
+async function entrar() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+    const erro = document.getElementById('loginErro');
+    const btn = document.getElementById('loginBtn');
+    erro.textContent = '';
+    if (!email || !senha) { erro.textContent = 'Informe e-mail e senha.'; return; }
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+    btn.disabled = false; btn.textContent = 'Entrar';
+    if (error) { erro.textContent = 'E-mail ou senha incorretos.'; return; }
+    document.getElementById('loginSenha').value = '';
+}
+
+async function sair() {
+    await sb.auth.signOut();
+}
+
+let usuarioAtual = null;
+sb.auth.onAuthStateChange((evento, sessao) => {
+    if (sessao && sessao.user) {
+        document.getElementById('telaLogin').classList.add('hidden');
+        // Só carrega quando o usuário muda (evita recarregar a cada renovação de token)
+        if (sessao.user.id !== usuarioAtual) {
+            usuarioAtual = sessao.user.id;
+            // setTimeout evita travar o cliente do Supabase dentro deste callback
+            setTimeout(() => { mostrarAba('alunos'); carregar(); }, 0);
+        }
+    } else {
+        usuarioAtual = null;
+        alunos = []; turmaAtiva = ""; relatoriosSalvosMap = {};
+        renderTabs(); renderTabela(); renderRelatorios();
+        document.getElementById('telaLogin').classList.remove('hidden');
+    }
+});
+// FINAL AUTH
     </script>
 </body>
 </html>
