@@ -214,12 +214,7 @@
                         <div><label class="label" for="generoInd">Gênero</label>
                             <select id="generoInd" class="field"><option value="masc">Masculino</option><option value="fem">Feminino</option></select></div>
                         <div><label class="label" for="perfilInd">Perfil</label>
-                            <select id="perfilInd" class="field">
-                                <option value="participativo">Participativo</option>
-                                <option value="pouco_participativo">Pouco part.</option>
-                                <option value="agitado">Agitado</option>
-                                <option value="melhorar">Melhorar</option>
-                            </select></div>
+                            <select id="perfilInd" class="field"></select></div>
                     </div>
                     <button onclick="salvarIndividual()" class="btn btn-primary w-full">Salvar aluno</button>
                 </div>
@@ -349,12 +344,7 @@ async function salvarMassa() {
 
             <div class="mt-4">
                 <label class="label" for="mPerfil">Perfil</label>
-                <select id="mPerfil" onchange="atualizarDado('${a.id}', 'perfil', this.value); abrirModalAluno('${a.id}');" class="field">
-                    <option value="participativo" ${a.perfil==='participativo'?'selected':''}>Participativo</option>
-                    <option value="pouco_participativo" ${a.perfil==='pouco_participativo'?'selected':''}>Pouco participativo</option>
-                    <option value="agitado" ${a.perfil==='agitado'?'selected':''}>Agitado</option>
-                    <option value="melhorar" ${a.perfil==='melhorar'?'selected':''}>Melhorar</option>
-                </select>
+                <select id="mPerfil" onchange="trocarPerfil('${a.id}', this.value)" class="field">${opcoesPerfil(a.perfil)}</select>
             </div>
         </div>
     `;
@@ -543,7 +533,7 @@ async function remover(id) {
 
         // ===== RELATÓRIO NO MODELO DA COORDENAÇÃO =====
 // Atualize estes 4 valores a cada bimestre:
-const REL_BIMESTRE = '3º', REL_ANO = '2026', REL_DATA = 'OUTUBRO DE 2026', REL_PROFESSOR = '';
+const REL_BIMESTRE = '3º', REL_ANO = '2026', REL_DATA = 'OUTUBRO DE 2026', REL_PROFESSOR = 'Sergio Leonardo (Mr. Léo)';
 
 // "@" vira o/a conforme o gênero e {n} vira o primeiro nome
 const BANCO = {
@@ -576,7 +566,50 @@ const BANCO = {
         o: ["Com o apoio da família e a continuidade das atividades, esperamos avanços importantes no próximo bimestre.", "Para o próximo bimestre, a sugestão é incentivar a prática de atividades físicas também fora da escola.", "Seguiremos valorizando cada conquista de {n} e ajustando as atividades ao seu ritmo de aprendizagem."]
     }
 };
+// Terceira frase (emoções) dos perfis que já existiam
+BANCO.participativo.c3 = ["Demonstra equilíbrio emocional e acolhe os colegas nos momentos de erro.", "Expressa suas emoções com tranquilidade e lida bem com vitórias e derrotas.", "Mostra empatia e disposição para ajudar quem tem mais dificuldade."];
+BANCO.pouco_participativo.c3 = ["Expressa suas emoções com discrição e se sente acolhid@ quando recebe incentivo individual.", "Tem se mostrado mais confiante e à vontade para pedir ajuda ao longo do bimestre.", "Demonstra sensibilidade e cuidado com os colegas, ainda que prefira observar."];
+BANCO.agitado.c3 = ["Expressa suas emoções de forma intensa e vem aprendendo a se acalmar com pausas e orientação.", "Demonstra alegria e entusiasmo e está aprendendo a lidar com a espera e com a frustração.", "Reage bem a combinados claros e valoriza o reconhecimento de suas conquistas."];
+BANCO.melhorar.c3 = ["Demonstra sensibilidade diante das dificuldades e se anima com o reconhecimento de cada avanço.", "Tem ganhado confiança em si mesm@ e se orgulha das pequenas conquistas.", "Expressa o que sente com sinceridade e acolhe o apoio dos colegas e professores."];
 
+// Perfis novos (pedagógico e observações vêm do perfil "base")
+Object.assign(BANCO, {
+    lider: { base: 'participativo',
+        c1: ["Assume naturalmente a liderança nas atividades em grupo e organiza os colegas com respeito.", "Costuma ser escolhid@ pelos colegas para liderar equipes e conduz os jogos com atenção a todos.", "Toma a iniciativa nas atividades coletivas e motiva o grupo a participar."],
+        c2: ["Cumpre os combinados com exemplo e ajuda a lembrar as regras da turma.", "Demonstra autonomia e senso de responsabilidade ao auxiliar na organização das aulas.", "Acompanha as orientações com atenção e é referência de postura para os colegas."],
+        c3: ["Mantém a calma em situações de disputa e incentiva os colegas após erros e derrotas.", "Expressa suas emoções com equilíbrio e acolhe quem precisa de apoio.", "Está aprendendo a ouvir as ideias dos outros antes de decidir pelo grupo."] },
+    competitivo: { base: 'participativo',
+        c1: ["Participa com grande empenho de todas as atividades e busca sempre dar o seu melhor nos jogos.", "Gosta de desafios e se envolve intensamente nas atividades que envolvem disputa.", "Interage bem com o grupo, mas precisa lembrar que o jogo também é cooperação."],
+        c2: ["Respeita as regras, mas precisa de lembretes para valorizar o processo e não só o resultado.", "Tem evoluído no cumprimento dos combinados, especialmente durante as competições.", "Responde bem a metas claras e aos combinados definidos antes dos jogos."],
+        c3: ["Está aprendendo a lidar com a derrota e a reconhecer o esforço dos adversários.", "Demonstra frustração quando não vence, o que vem sendo trabalhado com diálogo e exemplos.", "Tem controlado melhor a ansiedade nas disputas e comemorado também as conquistas da equipe."] },
+    ansioso: { base: 'pouco_participativo',
+        c1: ["Participa das atividades, mas demonstra preocupação em acertar e precisa de incentivo para se soltar.", "Nas atividades em grupo, busca apoio dos colegas e do professor antes de iniciar as tarefas.", "Vem ganhando confiança para interagir, principalmente quando as atividades são explicadas passo a passo."],
+        c2: ["Cumpre os combinados com dedicação e pede confirmação das orientações para se sentir segur@.", "Demonstra cuidado com o material e as regras e precisa de tempo para se adaptar a novidades.", "Tem ampliado sua autonomia com orientações claras e previsíveis."],
+        c3: ["Demonstra nervosismo diante de desafios novos e se acalma com acolhimento e incentivo.", "Está aprendendo a lidar com o medo de errar e a enxergar o erro como parte do aprendizado.", "Tem expressado melhor o que sente e pedido ajuda quando necessário."] },
+    disperso: { base: 'agitado',
+        c1: ["Participa das atividades, mas se distrai com facilidade e precisa de lembretes para retomar o foco.", "Interage bem com os colegas e, em alguns momentos, perde a atenção durante as explicações.", "Rende melhor quando está próximo ao professor e recebe tarefas com objetivos curtos."],
+        c2: ["Tem avançado no cumprimento dos combinados, ainda com apoio para iniciar e concluir as tarefas.", "Precisa de orientações repetidas e objetivas para acompanhar as regras dos jogos.", "Demonstra boa vontade e responde bem quando é reconhecid@ pelos esforços."],
+        c3: ["Tem se mostrado tranquil@ e receptiv@ às correções, com avanços na concentração.", "Fica desanimad@ quando perde o ritmo do grupo, e o incentivo constante tem ajudado.", "Expressa suas emoções com espontaneidade e vem aprendendo a esperar a sua vez."] },
+    convivencia: { base: 'participativo',
+        c1: ["Está aprendendo a conviver com respeito nas atividades coletivas, com avanços ao longo do bimestre.", "Em alguns momentos tem dificuldade em dividir espaços e materiais, o que vem sendo trabalhado com mediação.", "Tem buscado a aproximação dos colegas e participa melhor quando duplas e grupos são organizados pelo professor."],
+        c2: ["Precisa de lembretes sobre os combinados de convivência, como respeitar a vez e o espaço do outro.", "Tem melhorado o cumprimento das regras quando recebe orientação individual.", "Demonstra boa vontade em reparar atitudes e pedir desculpas quando necessário."],
+        c3: ["Tem expressado suas emoções com mais cuidado, usando o diálogo antes de reagir.", "Fica irritad@ em situações de conflito e vem aprendendo estratégias para se acalmar.", "Reage bem ao diálogo e ao reconhecimento das atitudes positivas."] }
+});
+
+// Lista de perfis exibida nos campos de seleção
+const PERFIS = { participativo: 'Participativo', pouco_participativo: 'Pouco participativo', agitado: 'Agitado', melhorar: 'Melhorar', lider: 'Líder', competitivo: 'Competitivo(a)', ansioso: 'Ansioso(a)', disperso: 'Disperso(a)', convivencia: 'Em desenvolvimento nas relações' };
+function opcoesPerfil(atual) {
+    return Object.entries(PERFIS).map(([v, n]) => `<option value="${v}" ${v === atual ? 'selected' : ''}>${n}</option>`).join('');
+}
+document.getElementById('perfilInd').innerHTML = opcoesPerfil('participativo');
+
+async function trocarPerfil(id, valor) {
+    await atualizarDado(id, 'perfil', valor);
+    await gerarIndividual(id, false);
+    const a = alunos.find(al => al.id === id);
+    mostrarToast(`Relatório de ${a.nome.split(' ')[0]} gerado.`);
+    abrirModalAluno(id);
+}
 function lerRel(txt) {
     try { const o = JSON.parse(txt); if (o && o.p) return o; } catch (e) {}
     return { p: txt || '', c: '', o: '' };
@@ -587,20 +620,26 @@ function juntarRel(txt, sep = '\n\n') {
 }
 
 function montarRelatorio(a) {
-    const banco = BANCO[a.perfil] || BANCO.participativo;
+    const perfil = BANCO[a.perfil] ? a.perfil : 'participativo';
+    const banco = BANCO[perfil];
+    const base = banco.p1 ? banco : BANCO[banco.base];
     const nome = a.nome.trim().split(/\s+/)[0];
     const fem = a.genero === 'fem';
-    const outros = new Set(alunos
+    const pick = arr => Math.floor(Math.random() * arr.length);
+    const ordens = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+    const usados = new Set(alunos
         .filter(x => x.turma === a.turma && x.id !== a.id && relatoriosSalvosMap[x.id])
-        .map(x => lerRel(relatoriosSalvosMap[x.id]).k));
-    let k;
-    for (let t = 0; t < 60; t++) {
-        k = ['p1', 'p2', 'c1', 'c2', 'o'].map(s => Math.floor(Math.random() * banco[s].length)).join('-');
-        if (!outros.has(k)) break;
+        .map(x => lerRel(relatoriosSalvosMap[x.id]).kc));
+    let kc, ic;
+    for (let t = 0; t < 80; t++) {
+        ic = [pick(banco.c1), pick(banco.c2), pick(banco.c3), Math.floor(Math.random() * 6)];
+        kc = perfil + ':' + ic.join('-');
+        if (!usados.has(kc)) break;
     }
-    const [i1, i2, i3, i4, i5] = k.split('-').map(Number);
     const f = s => s.replace(/@/g, fem ? 'a' : 'o').replace(/\{n\}/g, nome);
-    return JSON.stringify({ k, p: f(banco.p1[i1] + ' ' + banco.p2[i2]), c: f(banco.c1[i3] + ' ' + banco.c2[i4]), o: f(banco.o[i5]) });
+    const fr = [banco.c1[ic[0]], banco.c2[ic[1]], banco.c3[ic[2]]];
+    const c = ordens[ic[3]].map(i => fr[i]).join(' ');
+    return JSON.stringify({ kc, p: f(base.p1[pick(base.p1)] + ' ' + base.p2[pick(base.p2)]), c: f(c), o: f(base.o[pick(base.o)]) });
 }
 
 async function gerarIndividual(id, rolar = true) {
@@ -612,7 +651,7 @@ async function gerarIndividual(id, rolar = true) {
     if (rolar) rolarAte(id);
 }
 
-function paginaRel(a, r) {
+function paginaRel(a, r, dataImp) {
     const fmt = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
     const itens = ['Língua Portuguesa', 'Matemática', 'Ciências Naturais', 'História / Geografia', 'Arte', 'Socioemocional', 'Ed. Física', 'Inglês', 'Música', 'Balé/ Judô'];
     const topo = '<img class="timbrado" src="timbrado-relatorio.webp" alt="">';
@@ -630,8 +669,8 @@ function paginaRel(a, r) {
     <section class="folha">${topo}<div class="conteudo">
         <p class="rh" style="margin-top:11mm">OBSERVAÇÕES FINAIS (se necessário)</p>
         <p class="rx" style="min-height:48mm">${fmt(r.o)}</p>
-        <p class="rh">Professor(a) responsável pelo registro: ${fmt(REL_PROFESSOR)}</p>
-        <p class="rh">Data: ______/_________/________</p>
+        <p class="rh">Professor(a) responsável pelo registro: <span style="font-weight:400">${fmt(REL_PROFESSOR)}</span></p>
+<p class="rh">Data: <span style="font-weight:400">${dataImp}</span></p>
     </div></section>`;
 }
 
@@ -641,8 +680,8 @@ async function imprimirRelatorios() {
         .sort((a, b) => a.nome.localeCompare(b.nome));
     if (lista.length === 0) return mostrarToast('Não há relatórios para imprimir.');
     const area = document.getElementById('folhaImpressao');
-    area.innerHTML = lista.map(a => paginaRel(a, lerRel(relatoriosSalvosMap[a.id]))).join('');
-    await Promise.all([...area.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+const dataImp = new Date().toLocaleDateString('pt-BR');
+area.innerHTML = lista.map(a => paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp)).join('');    await Promise.all([...area.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
     window.print();
 }
 
