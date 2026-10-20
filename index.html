@@ -105,6 +105,20 @@ select.cs-oculto { display: none !important; }
     .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
     .rh1 { margin-top: 6mm !important; }
 }
+/* PDF individual por aluno: a folha é montada fora da tela com o mesmo visual da impressão */
+#pdfRender { position: fixed; left: -10000px; top: 0; width: 210mm; background: #fff; }
+#pdfRender .folha { position: relative; width: 210mm; height: 297mm; padding: 24mm 20mm 20mm; box-sizing: border-box; overflow: hidden; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #000; background: #fff; }
+#pdfRender .folha .timbrado { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+#pdfRender .folha .conteudo { position: relative; z-index: 1; }
+#pdfRender .folha p { margin: 0 0 3.8mm; line-height: 1.15; }
+#pdfRender .rt { text-align: center; font-weight: 700; }
+#pdfRender .rg { display: grid; grid-template-columns: var(--c) 1fr; }
+#pdfRender .rj { text-align: justify; }
+#pdfRender .ri { font-weight: 700; margin-bottom: 1.2mm !important; }
+#pdfRender .rh { font-weight: 700; margin-bottom: 1mm !important; }
+#pdfRender .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
+#pdfRender .rh1 { margin-top: 6mm !important; }
+#pdfRender u { text-decoration: none; border-bottom: 1px solid #000; }
     </style>
 </head>
 <body>
@@ -772,15 +786,73 @@ function paginaRel(a, r, dataImp) {
     </div></section>`;
 }
 
+// PDF individual por aluno (arquivo com o nome do aluno), todos baixados juntos num .zip com o nome da turma
+const LIBS_PDF = [
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
+];
+let libsPdfProntas = null;
+function carregarLibsPdf() {
+    if (!libsPdfProntas) libsPdfProntas = Promise.all(LIBS_PDF.map(src => new Promise((ok, erro) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = ok; s.onerror = () => erro(new Error('falha ao carregar ' + src));
+        document.head.appendChild(s);
+    }))).catch(e => { libsPdfProntas = null; throw e; });
+    return libsPdfProntas;
+}
+const nomeArquivo = t => String(t || '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '') || 'sem nome';
+let gerandoPdfs = false;
+
 async function imprimirRelatorios() {
+    if (gerandoPdfs) return;
     const lista = alunos
         .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
         .sort((a, b) => a.nome.localeCompare(b.nome));
     if (lista.length === 0) return mostrarToast('Não há relatórios para imprimir.');
-    const area = document.getElementById('folhaImpressao');
-const dataImp = new Date().toLocaleDateString('pt-BR');
-area.innerHTML = lista.map(a => paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp)).join('');    await Promise.all([...area.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
-    window.print();
+    gerandoPdfs = true;
+    const turma = turmaAtiva;
+    const pasta = nomeArquivo(turma);
+    let area = document.getElementById('pdfRender');
+    if (!area) { area = document.createElement('div'); area.id = 'pdfRender'; area.setAttribute('aria-hidden', 'true'); document.body.appendChild(area); }
+    try {
+        mostrarToast('Preparando os PDFs…');
+        await carregarLibsPdf();
+        const { jsPDF } = window.jspdf;
+        const zip = new JSZip();
+        const dir = zip.folder(pasta);
+        const usados = new Set();
+        const dataImp = new Date().toLocaleDateString('pt-BR');
+        for (let n = 0; n < lista.length; n++) {
+            const a = lista[n];
+            mostrarToast(`Gerando PDF ${n + 1} de ${lista.length}: ${a.nome}`);
+            area.innerHTML = paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp);
+            await Promise.all([...area.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+            const folha = area.querySelector('.folha');
+            const canvas = await html2canvas(folha, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+            pdf.setProperties({ title: `Relatório – ${a.nome}` });
+            let nome = nomeArquivo(a.nome), k = 2;
+            while (usados.has(nome.toLowerCase())) nome = `${nomeArquivo(a.nome)} (${k++})`;
+            usados.add(nome.toLowerCase());
+            dir.file(nome + '.pdf', pdf.output('blob'));
+        }
+        mostrarToast('Compactando…');
+        const pacote = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(pacote);
+        const link = document.createElement('a');
+        link.href = url; link.download = pasta + '.zip';
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        mostrarToast(`${lista.length} relatório(s) baixado(s) na pasta "${pasta}".`);
+    } catch (e) {
+        console.error(e);
+        mostrarToast('Não foi possível gerar os PDFs. Verifique a internet e tente novamente.');
+    } finally {
+        area.innerHTML = '';
+        gerandoPdfs = false;
+    }
 }
 
 async function gerarTurmaToda() {
@@ -1014,5 +1086,3 @@ sb.auth.onAuthStateChange((evento, sessao) => {
     </script>
 </body>
 </html>
-
-
