@@ -66,7 +66,8 @@ select.cs-oculto { display: none !important; }
 .cs-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-vazio { color: var(--muted); }
 .cs-lista { position: fixed; z-index: 80; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -12px rgba(20,33,61,.35); padding: 6px; overflow-y: auto; }
-.cs-op { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-align: left; cursor: pointer; color: var(--ink); background: transparent; }
+.cs-op { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; color: var(--ink); background: transparent; }
+.cs-op > span { flex: 1; text-align: left; }
 .cs-op:hover, .cs-op:focus-visible { background: #eef0fb; outline: none; }
 .cs-op[aria-selected="true"] { background: #eef0fb; color: var(--brand-d); font-weight: 600; }
         
@@ -594,11 +595,11 @@ function renderTabela() {
             <img src="${a.genero === 'fem' ? ICONE_FEM : ICONE_MASC}" alt="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" title="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" width="16" height="16" class="w-4 h-4 flex-shrink-0">
             <button onclick="abrirModalAluno('${a.id}')" class="flex-1 min-w-[120px] text-left font-semibold text-base hover:underline">${a.nome}</button>
             ${configRapida ? `
-            <div class="flex gap-2 w-full md:w-auto">
-                <div class="flex-1 md:w-44 md:flex-none">
+            <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                <div class="w-full md:w-56">
                     <select class="field field-sm" aria-label="Perfil pedagógico de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil', this.value)">${opcoesPerfil(PERFIS_PED, a.perfil, 'Pedagógico...')}</select>
                 </div>
-                <div class="flex-1 md:w-44 md:flex-none">
+                <div class="w-full md:w-56">
                     <select class="field field-sm" aria-label="Perfil comportamental e emocional de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil_comp', this.value)">${opcoesPerfil(PERFIS_COMP, a.perfil_comp, 'Comportamental...')}</select>
                 </div>
             </div>` : ''}
@@ -903,13 +904,14 @@ function csAbrir(sel) {
     csAberto = { btn, lista };
     btn.setAttribute('aria-expanded', 'true');
 
+        lista.style.width = 'max-content';
     const r = btn.getBoundingClientRect();
     const desejada = Math.min(lista.scrollHeight + 2, 280);
     const abaixo = window.innerHeight - r.bottom - 8;
     const acima = r.top - 8;
     const emBaixo = abaixo >= desejada || abaixo >= acima;
     const altura = Math.min(desejada, emBaixo ? abaixo : acima);
-    const largura = Math.min(Math.max(r.width, 200), window.innerWidth - 16);
+        const largura = Math.min(Math.max(r.width, lista.offsetWidth), window.innerWidth - 16);
     lista.style.width = largura + 'px';
     lista.style.left = Math.max(8, Math.min(r.left, window.innerWidth - largura - 8)) + 'px';
     lista.style.maxHeight = altura + 'px';
