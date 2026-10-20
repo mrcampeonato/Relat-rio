@@ -183,6 +183,7 @@
         <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Principal">
             <button id="nav-alunos" onclick="mostrarAba('alunos')" aria-current="page" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 bg-indigo-50 text-indigo-700">Alunos</button>
             <button id="nav-cadastro" onclick="mostrarAba('cadastro')" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100">Cadastrar</button>
+                        <button id="btnTodasTurmas" onclick="baixarTodasTurmas()" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100">Baixar tudo</button>
             <button onclick="sair()" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 text-gray-500">Sair</button>
         </nav>
     </div>
@@ -840,6 +841,67 @@ async function baixarDocx() {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Baixar Word';
+    }
+}
+
+    async function baixarTodasTurmas() {
+    const turmas = [...new Set(alunos.map(a => a.turma))].sort()
+        .filter(t => alunos.some(a => a.turma === t && relatoriosSalvosMap[a.id]));
+    if (turmas.length === 0) return mostrarToast('Não há relatórios para baixar.');
+    if (!window.JSZip) return mostrarToast('Biblioteca ainda carregando. Tente de novo em instantes.');
+
+    const btn = document.getElementById('btnTodasTurmas');
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Preparando...';
+    try {
+        const resp = await fetch(MODELO_DOCX, { cache: 'no-cache' });
+        if (!resp.ok) throw new Error('modelo-relatorio.docx não encontrado');
+        const bytesModelo = await resp.arrayBuffer();
+        const dataImp = new Date().toLocaleDateString('pt-BR');
+
+        for (let t = 0; t < turmas.length; t++) {
+            const turma = turmas[t];
+            const lista = alunos
+                .filter(a => a.turma === turma && relatoriosSalvosMap[a.id])
+                .sort((a, b) => a.nome.localeCompare(b.nome));
+            const nomePasta = nomeArquivoSeguro(turma);
+            const zipTurma = new JSZip();
+            const pasta = zipTurma.folder(nomePasta);
+            const usados = new Set();
+
+            for (let i = 0; i < lista.length; i++) {
+                const a = lista[i];
+                btn.textContent = `${turma}: ${i + 1}/${lista.length}`;
+                const doc = await JSZip.loadAsync(bytesModelo);
+                const xml = await doc.file('word/document.xml').async('string');
+                doc.file('word/document.xml', preencherModelo(xml, a, lerRel(relatoriosSalvosMap[a.id]), dataImp));
+                const bytes = await doc.generateAsync({
+                    type: 'arraybuffer', compression: 'DEFLATE',
+                    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                });
+                let nome = nomeArquivoSeguro(a.nome), n = 2;
+                while (usados.has(nome.toLowerCase())) nome = nomeArquivoSeguro(a.nome) + ' (' + n++ + ')';
+                usados.add(nome.toLowerCase());
+                pasta.file(nome + '.docx', bytes);
+            }
+
+            const blob = await zipTurma.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = nomePasta + '.zip';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+            await new Promise(r => setTimeout(r, 700));
+        }
+        mostrarToast(`${turmas.length} turma(s) baixada(s).`);
+    } catch (e) {
+        mostrarToast('Não foi possível gerar os arquivos: ' + (e.message || e));
+    } finally {
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
     }
 }
 
