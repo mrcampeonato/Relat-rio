@@ -87,8 +87,8 @@
     .rj { text-align: justify; }
     .ri { font-weight: 700; margin-bottom: 1.2mm !important; }
     .rh { font-weight: 700; margin-bottom: 1mm !important; }
-    .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 24mm; margin-bottom: 3mm !important; }
-    .rxo { min-height: 14mm; }
+    .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
+    .rh1 { margin-top: 6mm !important; }
 }
     </style>
 </head>
@@ -186,6 +186,7 @@
         <!-- Botão de ação sempre visível -->
                 <div class="no-print sticky bottom-0 z-30 -mx-4 px-4 py-3 bg-white/90 backdrop-blur border-t flex gap-2 justify-center md:justify-end" style="border-color:var(--line)">
             <button onclick="irParaPrimeiroRelatorio()" class="btn btn-ghost flex-1 md:flex-none md:px-6">Ir para relatórios</button>
+            <button id="btnConfig" onclick="alternarConfigRapida()" aria-pressed="false" class="btn btn-ghost flex-1 md:flex-none !px-3 md:!px-6">Config. rápida</button>
             <button onclick="gerarTurmaToda()" class="btn btn-primary flex-[2] md:flex-none md:px-10">Gerar relatórios da turma</button>
         </div>
 
@@ -533,15 +534,45 @@ async function remover(id) {
     } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
 }
 
-        function renderTabela() {
+        let configRapida = false;
+
+function alternarConfigRapida() {
+    configRapida = !configRapida;
+    const b = document.getElementById('btnConfig');
+    b.classList.toggle('aba-ativa', configRapida);
+    b.setAttribute('aria-pressed', String(configRapida));
+    renderTabela();
+}
+
+async function trocarPerfilRapido(id, campo, valor) {
+    const a = alunos.find(al => al.id === id);
+    if (!a) return;
+    a[campo] = valor || null;
+    await sb.from('alunos').update({ [campo]: valor || null }).eq('id', id);
+    if (perfisCompletos(a)) {
+        await gerarIndividual(id, false);
+        mostrarToast(`Relatório de ${a.nome.split(' ')[0]} gerado.`);
+    }
+}
+
+function renderTabela() {
     const tbody = document.getElementById('tabelaAlunos');
     const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
     if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Use a aba Cadastrar.</p>`; return; }
     tbody.innerHTML = filtrados.map(a => `
         <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
             <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" loading="lazy" onclick="abrirModalAluno('${a.id}')" class="foto-preview">
-                                    <img src="${a.genero === 'fem' ? ICONE_FEM : ICONE_MASC}" alt="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" title="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" width="16" height="16" class="w-4 h-4 flex-shrink-0">
+            <img src="${a.genero === 'fem' ? ICONE_FEM : ICONE_MASC}" alt="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" title="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" width="16" height="16" class="w-4 h-4 flex-shrink-0">
             <button onclick="abrirModalAluno('${a.id}')" class="flex-1 min-w-[120px] text-left font-semibold text-base hover:underline">${a.nome}</button>
+            ${configRapida ? `
+            <div class="flex gap-2 w-full md:w-auto">
+                <div class="flex-1 md:w-44 md:flex-none">
+                    <select class="field field-sm" aria-label="Perfil pedagógico de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil', this.value)">${opcoesPerfil(PERFIS_PED, a.perfil, 'Pedagógico...')}</select>
+                </div>
+                <div class="flex-1 md:w-44 md:flex-none">
+                    <select class="field field-sm" aria-label="Perfil comportamental e emocional de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil_comp', this.value)">${opcoesPerfil(PERFIS_COMP, a.perfil_comp, 'Comportamental...')}</select>
+                </div>
+            </div>` : ''}
             <div class="flex gap-2 ml-auto">
                 <button onclick="irParaRelatorio('${a.id}')" class="btn btn-ghost btn-sm !px-3" aria-label="Ver relatório de ${a.nome}" title="Ver relatório">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
@@ -558,71 +589,65 @@ async function remover(id) {
 const REL_BIMESTRE = '3º', REL_ANO = '2026', REL_DATA = 'OUTUBRO DE 2026', REL_PROFESSOR = 'Sergio Leonardo (Mr. Léo)';
 
 // "@" vira o/a conforme o gênero e {n} vira o primeiro nome
+// Perfis pedagógicos usam p1, p2 e o. Perfis comportamentais usam c1, c2 e c3.
 const BANCO = {
     participativo: {
         p1: ["{n} demonstra boa coordenação motora e executa com segurança os movimentos propostos nas aulas.", "Nas atividades práticas, {n} mostra domínio crescente dos fundamentos esportivos trabalhados no bimestre.", "{n} apresenta ótimo desempenho nas atividades motoras, com agilidade, equilíbrio e boa noção de espaço."],
         p2: ["Compreende rapidamente as orientações e aplica o que aprende em jogos e circuitos.", "Evoluiu na execução dos fundamentos e já resolve situações de jogo com autonomia.", "Assimila novos movimentos com facilidade e se supera a cada desafio proposto."],
-        c1: ["Participa com entusiasmo de todas as atividades e incentiva os colegas durante os jogos.", "Interage de forma respeitosa com colegas e professores, colaborando para um bom clima nas aulas.", "Mostra espírito de equipe, divide as tarefas e valoriza a participação de todos."],
-        c2: ["Cumpre os combinados, respeita as regras e demonstra autonomia na organização do material e do grupo.", "Lida bem com a vitória e a derrota, expressando suas emoções de maneira equilibrada.", "É responsável com os combinados da turma e atent@ às orientações do professor."],
         o: ["Seguiremos estimulando seu protagonismo, propondo desafios que ampliem suas habilidades no próximo bimestre.", "Para o próximo bimestre, a sugestão é manter a constância e explorar novas modalidades.", "Recomenda-se que {n} continue sendo incentivad@ a assumir papéis de liderança nos jogos coletivos."]
     },
     pouco_participativo: {
         p1: ["{n} executa os movimentos com cuidado e, aos poucos, ganha segurança na coordenação motora.", "Nas aulas práticas, {n} se mostra atent@ e vem avançando no domínio dos fundamentos trabalhados.", "{n} realiza as atividades em seu próprio ritmo, com evolução gradual na execução dos movimentos."],
-        p2: ["Tem se beneficiado de demonstrações e de atividades em pequenos grupos, ampliando seu repertório motor.", "Compreende as orientações, mas ainda precisa de estímulo para arriscar movimentos novos.", "Apresenta progresso nos jogos em dupla e em trios, onde se sente mais à vontade para atuar."],
-        c1: ["É reservad@ e prefere observar antes de participar, mas já mostra maior abertura na interação com os colegas.", "Tem se integrado de forma gradual ao grupo, aceitando com mais frequência os convites dos colegas para jogar.", "Participa com discrição e, com incentivo, vem ampliando sua presença nas atividades coletivas."],
-        c2: ["Respeita os combinados e acompanha as instruções com atenção, demonstrando cuidado com o grupo.", "Precisa de apoio para se expressar durante as atividades, o que vem sendo trabalhado com acolhimento.", "Demonstra responsabilidade com o material e com as regras, ganhando autonomia a cada aula."],
-        o: ["Continuaremos valorizando seu ritmo e propondo atividades que fortaleçam sua confiança no próximo bimestre.", "A parceria com a família será importante para incentivar {n} a participar com mais segurança.", "Para o próximo bimestre, a sugestão é estimular pequenas conquistas e a participação voluntária nos jogos."]
+        p2: ["Tem se beneficiado de demonstrações e de atividades em pequenos grupos, ampliando seu repertório motor.", "Compreende as orientações e, com incentivo, fica cada vez mais dispost@ a experimentar movimentos novos.", "Apresenta progresso nos jogos em dupla e em trios, onde se sente mais à vontade para atuar."],
+        o: ["Continuaremos valorizando seu ritmo e propondo atividades que fortaleçam sua confiança no próximo bimestre.", "A parceria com a família será muito importante para incentivar {n} a participar com ainda mais segurança.", "No próximo bimestre, vamos estimular pequenas conquistas e convidar {n} a participar de novos jogos, sempre com acolhimento."]
     },
     agitado: {
-        p1: ["{n} possui muita energia e vem direcionando-a para melhorar a precisão dos movimentos nas aulas.", "Nas atividades práticas, {n} se destaca pela velocidade e pelo entusiasmo, e trabalha o controle motor.", "{n} demonstra disposição e agilidade, aprimorando gradualmente a coordenação e a atenção aos detalhes."],
-        p2: ["Tem evoluído na execução dos fundamentos quando as orientações são claras e objetivas.", "Aprende com rapidez, mas ainda precisa desacelerar para executar os movimentos com técnica.", "Rende melhor em atividades com metas curtas e desafios que exigem concentração."],
-        c1: ["É comunicativ@ e criativ@, trazendo dinamismo ao grupo; trabalhamos o respeito ao tempo de fala e de vez dos colegas.", "Participa com vivacidade de todas as atividades e busca interagir com todos, precisando de apoio para respeitar espaços.", "Demonstra entusiasmo constante e vem aprendendo a ouvir as orientações antes de iniciar as tarefas."],
-        c2: ["Está aprendendo a respeitar os combinados e a regular seu ritmo, com avanços perceptíveis ao longo do bimestre.", "Precisa de lembretes sobre regras e limites do jogo e responde bem quando é reconhecid@ pelos acertos.", "Tem aprimorado o controle das emoções em situações de disputa, com apoio constante da equipe."],
-        o: ["Seguiremos canalizando sua energia para funções de responsabilidade, como ajudar na organização das atividades.", "Para o próximo bimestre, a sugestão é manter combinados claros e valorizar cada avanço de {n}.", "A parceria com a família favorece o desenvolvimento do foco e do autocontrole de {n}."]
+        p1: ["{n} possui muita energia e vem direcionando-a para aprimorar a precisão dos movimentos nas aulas.", "Nas atividades práticas, {n} se destaca pela velocidade e pelo entusiasmo, e vem desenvolvendo ainda mais o controle motor.", "{n} demonstra disposição e agilidade, aprimorando a cada aula a coordenação e a atenção aos detalhes."],
+        p2: ["Tem evoluído na execução dos fundamentos, principalmente quando as orientações são claras e objetivas.", "Aprende com rapidez e está desenvolvendo a calma necessária para executar os movimentos com cada vez mais técnica.", "Rende muito bem em atividades com metas curtas e desafios que estimulam a concentração."],
+        o: ["Seguiremos canalizando sua energia para funções de responsabilidade, como ajudar na organização das atividades.", "No próximo bimestre, manteremos combinados claros e valorizaremos cada avanço de {n}.", "A parceria com a família favorece ainda mais o desenvolvimento do foco e da autonomia de {n}."]
     },
     melhorar: {
-        p1: ["{n} vem se dedicando para aprimorar sua coordenação motora e demonstra esforço nas atividades propostas.", "Nas aulas práticas, {n} apresenta dificuldades em alguns movimentos e progride com a repetição e o apoio do professor.", "{n} está em fase de desenvolvimento das habilidades motoras básicas e mostra interesse em evoluir."],
-        p2: ["Apresenta avanços quando as atividades são divididas em etapas e recebe demonstrações individuais.", "Precisa consolidar equilíbrio, lateralidade e noção de ritmo, aspectos que seguem em trabalho.", "Com atividades de reforço e constância, tende a ampliar sua segurança nos fundamentos esportivos."],
-        c1: ["Participa das aulas com boa vontade e vem ganhando confiança na interação com os colegas.", "Aceita bem as orientações e tem se esforçado para acompanhar o ritmo da turma.", "Demonstra vontade de participar e se anima quando percebe seus progressos."],
-        c2: ["Cumpre os combinados e persiste diante das dificuldades, o que merece ser reconhecido.", "Tem lidado melhor com a frustração diante dos erros, com apoio e incentivo constantes.", "Precisa de reforço positivo para expressar o que sente e pedir ajuda quando necessário."],
-        o: ["Com o apoio da família e a continuidade das atividades, esperamos avanços importantes no próximo bimestre.", "Para o próximo bimestre, a sugestão é incentivar a prática de atividades físicas também fora da escola.", "Seguiremos valorizando cada conquista de {n} e ajustando as atividades ao seu ritmo de aprendizagem."]
-    }
-};
-// Terceira frase (emoções) dos perfis que já existiam
-BANCO.participativo.c3 = ["Demonstra equilíbrio emocional e acolhe os colegas nos momentos de erro.", "Expressa suas emoções com tranquilidade e lida bem com vitórias e derrotas.", "Mostra empatia e disposição para ajudar quem tem mais dificuldade."];
-BANCO.pouco_participativo.c3 = ["Expressa suas emoções com discrição e se sente acolhid@ quando recebe incentivo individual.", "Tem se mostrado mais confiante e à vontade para pedir ajuda ao longo do bimestre.", "Demonstra sensibilidade e cuidado com os colegas, ainda que prefira observar."];
-BANCO.agitado.c3 = ["Expressa suas emoções de forma intensa e vem aprendendo a se acalmar com pausas e orientação.", "Demonstra alegria e entusiasmo e está aprendendo a lidar com a espera e com a frustração.", "Reage bem a combinados claros e valoriza o reconhecimento de suas conquistas."];
-BANCO.melhorar.c3 = ["Demonstra sensibilidade diante das dificuldades e se anima com o reconhecimento de cada avanço.", "Tem ganhado confiança em si mesm@ e se orgulha das pequenas conquistas.", "Expressa o que sente com sinceridade e acolhe o apoio dos colegas e professores."];
-
-// Perfis novos (pedagógico e observações vêm do perfil "base")
-Object.assign(BANCO, {
-    lider: { base: 'participativo',
+        p1: ["{n} vem se dedicando para aprimorar sua coordenação motora e demonstra esforço nas atividades propostas.", "Nas aulas práticas, {n} progride a cada aula com a repetição dos movimentos e o apoio do professor.", "{n} está em fase de desenvolvimento das habilidades motoras básicas e mostra interesse em evoluir."],
+        p2: ["Apresenta avanços quando as atividades são divididas em etapas e recebe demonstrações individuais.", "Equilíbrio, lateralidade e noção de ritmo são habilidades que seguem em desenvolvimento, com evolução a cada aula.", "Com atividades de reforço e constância, tende a ampliar ainda mais sua segurança nos fundamentos esportivos."],
+        o: ["Com o apoio da família e a continuidade das atividades, esperamos avanços importantes no próximo bimestre.", "No próximo bimestre, sugerimos incentivar a prática de atividades físicas também fora da escola, de forma lúdica.", "Seguiremos valorizando cada conquista de {n} e ajustando as atividades ao seu ritmo de aprendizagem."]
+    },
+    lider: {
         c1: ["Assume naturalmente a liderança nas atividades em grupo e organiza os colegas com respeito.", "Costuma ser escolhid@ pelos colegas para liderar equipes e conduz os jogos com atenção a todos.", "Toma a iniciativa nas atividades coletivas e motiva o grupo a participar."],
         c2: ["Cumpre os combinados com exemplo e ajuda a lembrar as regras da turma.", "Demonstra autonomia e senso de responsabilidade ao auxiliar na organização das aulas.", "Acompanha as orientações com atenção e é referência de postura para os colegas."],
-        c3: ["Mantém a calma em situações de disputa e incentiva os colegas após erros e derrotas.", "Expressa suas emoções com equilíbrio e acolhe quem precisa de apoio.", "Está aprendendo a ouvir as ideias dos outros antes de decidir pelo grupo."] },
-    competitivo: { base: 'participativo',
-        c1: ["Participa com grande empenho de todas as atividades e busca sempre dar o seu melhor nos jogos.", "Gosta de desafios e se envolve intensamente nas atividades que envolvem disputa.", "Interage bem com o grupo, mas precisa lembrar que o jogo também é cooperação."],
-        c2: ["Respeita as regras, mas precisa de lembretes para valorizar o processo e não só o resultado.", "Tem evoluído no cumprimento dos combinados, especialmente durante as competições.", "Responde bem a metas claras e aos combinados definidos antes dos jogos."],
-        c3: ["Está aprendendo a lidar com a derrota e a reconhecer o esforço dos adversários.", "Demonstra frustração quando não vence, o que vem sendo trabalhado com diálogo e exemplos.", "Tem controlado melhor a ansiedade nas disputas e comemorado também as conquistas da equipe."] },
-    ansioso: { base: 'pouco_participativo',
-        c1: ["Participa das atividades, mas demonstra preocupação em acertar e precisa de incentivo para se soltar.", "Nas atividades em grupo, busca apoio dos colegas e do professor antes de iniciar as tarefas.", "Vem ganhando confiança para interagir, principalmente quando as atividades são explicadas passo a passo."],
-        c2: ["Cumpre os combinados com dedicação e pede confirmação das orientações para se sentir segur@.", "Demonstra cuidado com o material e as regras e precisa de tempo para se adaptar a novidades.", "Tem ampliado sua autonomia com orientações claras e previsíveis."],
-        c3: ["Demonstra nervosismo diante de desafios novos e se acalma com acolhimento e incentivo.", "Está aprendendo a lidar com o medo de errar e a enxergar o erro como parte do aprendizado.", "Tem expressado melhor o que sente e pedido ajuda quando necessário."] },
-    disperso: { base: 'agitado',
-        c1: ["Participa das atividades, mas se distrai com facilidade e precisa de lembretes para retomar o foco.", "Interage bem com os colegas e, em alguns momentos, perde a atenção durante as explicações.", "Rende melhor quando está próximo ao professor e recebe tarefas com objetivos curtos."],
-        c2: ["Tem avançado no cumprimento dos combinados, ainda com apoio para iniciar e concluir as tarefas.", "Precisa de orientações repetidas e objetivas para acompanhar as regras dos jogos.", "Demonstra boa vontade e responde bem quando é reconhecid@ pelos esforços."],
-        c3: ["Tem se mostrado tranquil@ e receptiv@ às correções, com avanços na concentração.", "Fica desanimad@ quando perde o ritmo do grupo, e o incentivo constante tem ajudado.", "Expressa suas emoções com espontaneidade e vem aprendendo a esperar a sua vez."] },
-    convivencia: { base: 'participativo',
-        c1: ["Está aprendendo a conviver com respeito nas atividades coletivas, com avanços ao longo do bimestre.", "Em alguns momentos tem dificuldade em dividir espaços e materiais, o que vem sendo trabalhado com mediação.", "Tem buscado a aproximação dos colegas e participa melhor quando duplas e grupos são organizados pelo professor."],
-        c2: ["Precisa de lembretes sobre os combinados de convivência, como respeitar a vez e o espaço do outro.", "Tem melhorado o cumprimento das regras quando recebe orientação individual.", "Demonstra boa vontade em reparar atitudes e pedir desculpas quando necessário."],
-        c3: ["Tem expressado suas emoções com mais cuidado, usando o diálogo antes de reagir.", "Fica irritad@ em situações de conflito e vem aprendendo estratégias para se acalmar.", "Reage bem ao diálogo e ao reconhecimento das atitudes positivas."] }
-});
+        c3: ["Mantém a calma em situações de disputa e incentiva os colegas após erros e derrotas.", "Expressa suas emoções com equilíbrio e acolhe quem precisa de apoio.", "Vem desenvolvendo ainda mais a escuta das ideias dos colegas, o que fortalece sua liderança."]
+    },
+    competitivo: {
+        c1: ["Participa com grande empenho de todas as atividades e busca sempre dar o seu melhor nos jogos.", "Gosta de desafios e se envolve com muita energia nas atividades que envolvem disputa.", "Interage bem com o grupo e vem descobrindo que o jogo também é uma oportunidade de cooperação."],
+        c2: ["Respeita as regras e vem aprendendo a valorizar também o processo, não só o resultado.", "Tem evoluído no cumprimento dos combinados, especialmente durante as competições.", "Responde muito bem a metas claras e aos combinados definidos antes dos jogos."],
+        c3: ["Vem desenvolvendo a habilidade de lidar com a derrota e de reconhecer o esforço dos adversários.", "Demonstra grande vontade de vencer e, com o diálogo e exemplos, aprende a transformar cada jogo em aprendizado.", "Tem controlado cada vez melhor a ansiedade nas disputas e comemorado também as conquistas da equipe."]
+    },
+    ansioso: {
+        c1: ["Participa das atividades com dedicação e se preocupa em fazer o melhor; com incentivo, vem se soltando cada vez mais.", "Nas atividades em grupo, busca o apoio dos colegas e do professor, o que mostra seu cuidado em fazer bem feito.", "Vem ganhando confiança para interagir, principalmente quando as atividades são explicadas passo a passo."],
+        c2: ["Cumpre os combinados com dedicação e valoriza as orientações para se sentir segur@.", "Demonstra cuidado com o material e com as regras e vem se adaptando bem às novidades.", "Tem ampliado sua autonomia com orientações claras e previsíveis."],
+        c3: ["Diante de desafios novos, se acalma com acolhimento e incentivo e vem ganhando tranquilidade.", "Está aprendendo a enxergar o erro como parte do aprendizado, o que fortalece sua confiança.", "Tem expressado cada vez melhor o que sente e pedido ajuda quando necessário."]
+    },
+    disperso: {
+        c1: ["Participa das atividades e vem desenvolvendo a concentração, com bons resultados quando recebe lembretes carinhosos.", "Interage bem com os colegas e mostra evolução na atenção durante as explicações.", "Rende muito bem quando está próxim@ ao professor e recebe tarefas com objetivos curtos."],
+        c2: ["Tem avançado no cumprimento dos combinados, com apoio para iniciar e concluir as tarefas.", "Acompanha as regras dos jogos com orientações objetivas e vem ganhando autonomia.", "Demonstra boa vontade e responde muito bem quando é reconhecid@ pelos esforços."],
+        c3: ["Tem se mostrado tranquil@ e receptiv@ às orientações, com avanços na concentração.", "Se anima com o incentivo constante e vem acompanhando o ritmo do grupo com mais facilidade.", "Expressa suas emoções com espontaneidade e vem aprendendo a esperar a sua vez."]
+    },
+    convivencia: {
+        c1: ["Está aprendendo a conviver nas atividades coletivas, com avanços importantes ao longo do bimestre.", "Vem desenvolvendo a partilha de espaços e materiais com os colegas, com apoio e mediação do professor.", "Tem buscado a aproximação dos colegas e participa muito bem quando duplas e grupos são organizados pelo professor."],
+        c2: ["Vem fortalecendo os combinados de convivência, como respeitar a vez e o espaço do outro.", "Tem melhorado o cumprimento das regras quando recebe orientação individual.", "Demonstra boa vontade em reparar atitudes e pedir desculpas quando necessário."],
+        c3: ["Tem expressado suas emoções com mais cuidado, usando o diálogo antes de reagir.", "Vem aprendendo estratégias para se acalmar em situações de conflito, com bons resultados.", "Reage bem ao diálogo e ao reconhecimento das atitudes positivas."]
+    },
+    esperado: {
+        c1: ["Participa das atividades de forma tranquila e adequada, relacionando-se bem com os colegas e com o professor.", "Convive de maneira respeitosa com o grupo e participa das propostas conforme o esperado para o bimestre.", "Integra-se bem às atividades em grupo e colabora para um bom ambiente nas aulas."],
+        c2: ["Cumpre os combinados e respeita as regras, demonstrando responsabilidade com o material e com a turma.", "Acompanha as orientações do professor com atenção e mantém uma postura adequada durante as aulas.", "Demonstra autonomia compatível com a faixa etária e segue os combinados com naturalidade."],
+        c3: ["Expressa suas emoções de maneira equilibrada e lida bem com as situações de jogo.", "Demonstra equilíbrio diante de vitórias e derrotas e se relaciona bem com os colegas.", "Mostra-se confiante e à vontade para participar e pedir ajuda quando precisa."]
+    }
+};
 
 const PERFIS_PED = { participativo: 'Participativo', pouco_participativo: 'Pouco participativo', agitado: 'Agitado', melhorar: 'Melhorar' };
-const PERFIS_COMP = { lider: 'Líder', competitivo: 'Competitivo(a)', ansioso: 'Ansioso(a)', disperso: 'Disperso(a)', convivencia: 'Em desenvolvimento nas relações' };
+const PERFIS_COMP = { lider: 'Líder', competitivo: 'Competitivo(a)', ansioso: 'Ansioso(a)', disperso: 'Disperso(a)', convivencia: 'Em desenvolvimento nas relações', esperado: 'Dentro do esperado' };
 
-function opcoesPerfil(lista, atual) {
-    return `<option value="" ${!lista[atual] ? 'selected' : ''}>Selecione...</option>` +
+function opcoesPerfil(lista, atual, vazio = 'Selecione...') {
+    return `<option value="" ${!lista[atual] ? 'selected' : ''}>${vazio}</option>` +
         Object.entries(lista).map(([v, n]) => `<option value="${v}" ${v === atual ? 'selected' : ''}>${n}</option>`).join('');
 }
 function perfisCompletos(a) { return !!(a && PERFIS_PED[a.perfil] && PERFIS_COMP[a.perfil_comp]); }
@@ -698,7 +723,7 @@ function paginaRel(a, r, dataImp) {
         <p class="rg" style="--c:92mm"><span><b>Bimestre:</b> ${REL_BIMESTRE}</span><span><b>Data: ${REL_DATA}</b></span></p>
         <p class="rj"><b><u>Componente(s) Curricular(es)</u></b> (assinale qual (quais) o (s) seu(s) componente(s) curricular(es)</p>
         ${itens.map(i => `<p class="ri">( ${i === 'Ed. Física' ? 'X' : '&nbsp;&nbsp;&nbsp;'} ) ${i}</p>`).join('')}
-        <p class="rh">Desenvolvimento pedagógico:</p><p class="rx">${fmt(r.p)}</p>
+        <p class="rh rh1">Desenvolvimento pedagógico:</p><p class="rx">${fmt(r.p)}</p>
         <p class="rh">Desenvolvimento comportamental e emocional:</p><p class="rx">${fmt(r.c)}</p>
         <p class="rh">OBSERVAÇÕES FINAIS (se necessário)</p><p class="rx rxo">${fmt(r.o)}</p>
         <p class="rh">Professor(a) responsável pelo registro: <span style="font-weight:400">${fmt(REL_PROFESSOR)}</span></p>
