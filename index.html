@@ -844,6 +844,7 @@ async function baixarDocx() {
     }
 }
 
+    // ===== INÍCIO DA ALTERAÇÃO =====
     async function baixarTodasTurmas() {
     const turmas = [...new Set(alunos.map(a => a.turma))].sort()
         .filter(t => alunos.some(a => a.turma === t && relatoriosSalvosMap[a.id]));
@@ -860,6 +861,9 @@ async function baixarDocx() {
         const bytesModelo = await resp.arrayBuffer();
         const dataImp = new Date().toLocaleDateString('pt-BR');
         const quebraPagina = '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>';
+
+        const zipFinal = new JSZip();
+        const nomesUsados = new Set();
 
         for (let t = 0; t < turmas.length; t++) {
             const turma = turmas[t];
@@ -882,21 +886,26 @@ async function baixarDocx() {
             );
             doc.file('word/document.xml', inicio + paginas.join(quebraPagina) + fim);
 
-            const blob = await doc.generateAsync({
-                type: 'blob', compression: 'DEFLATE',
+            const bytes = await doc.generateAsync({
+                type: 'arraybuffer', compression: 'DEFLATE',
                 mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = nomeArquivoSeguro(turma) + '.docx';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => URL.revokeObjectURL(link.href), 10000);
-            // pausa curta para o navegador aceitar vários downloads seguidos
-            await new Promise(r => setTimeout(r, 700));
+            let nome = nomeArquivoSeguro(turma), n = 2;
+            while (nomesUsados.has(nome.toLowerCase())) nome = nomeArquivoSeguro(turma) + ' (' + n++ + ')';
+            nomesUsados.add(nome.toLowerCase());
+            zipFinal.file(nome + '.docx', bytes);
         }
-        mostrarToast(`${turmas.length} arquivo(s) baixado(s), um por turma.`);
+
+        btn.textContent = 'Compactando...';
+        const blobZip = await zipFinal.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blobZip);
+        link.download = 'Relatorios por turma.zip';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+        mostrarToast(`${turmas.length} turma(s) baixada(s) em um arquivo .zip.`);
     } catch (e) {
         mostrarToast('Não foi possível gerar os arquivos: ' + (e.message || e));
     } finally {
@@ -904,6 +913,7 @@ async function baixarDocx() {
         btn.textContent = textoOriginal;
     }
 }
+// ===== FIM DA ALTERAÇÃO =====
 
     async function gerarTurmaToda() {
         const turma = alunos.filter(a => a.turma === turmaAtiva);
