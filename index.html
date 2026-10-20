@@ -859,44 +859,44 @@ async function baixarDocx() {
         if (!resp.ok) throw new Error('modelo-relatorio.docx não encontrado');
         const bytesModelo = await resp.arrayBuffer();
         const dataImp = new Date().toLocaleDateString('pt-BR');
+        const quebraPagina = '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>';
 
         for (let t = 0; t < turmas.length; t++) {
             const turma = turmas[t];
+            btn.textContent = `Turma ${t + 1}/${turmas.length}...`;
             const lista = alunos
                 .filter(a => a.turma === turma && relatoriosSalvosMap[a.id])
                 .sort((a, b) => a.nome.localeCompare(b.nome));
-            const nomePasta = nomeArquivoSeguro(turma);
-            const zipTurma = new JSZip();
-            const pasta = zipTurma.folder(nomePasta);
-            const usados = new Set();
 
-            for (let i = 0; i < lista.length; i++) {
-                const a = lista[i];
-                btn.textContent = `${turma}: ${i + 1}/${lista.length}`;
-                const doc = await JSZip.loadAsync(bytesModelo);
-                const xml = await doc.file('word/document.xml').async('string');
-                doc.file('word/document.xml', preencherModelo(xml, a, lerRel(relatoriosSalvosMap[a.id]), dataImp));
-                const bytes = await doc.generateAsync({
-                    type: 'arraybuffer', compression: 'DEFLATE',
-                    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                });
-                let nome = nomeArquivoSeguro(a.nome), n = 2;
-                while (usados.has(nome.toLowerCase())) nome = nomeArquivoSeguro(a.nome) + ' (' + n++ + ')';
-                usados.add(nome.toLowerCase());
-                pasta.file(nome + '.docx', bytes);
-            }
+            const doc = await JSZip.loadAsync(bytesModelo);
+            const xml = await doc.file('word/document.xml').async('string');
+            // separa: início do arquivo | conteúdo da página | configuração final da página
+            const m = xml.match(/^([\s\S]*?<w:body[^>]*>)([\s\S]*)(<w:sectPr[\s\S]*?<\/w:sectPr>\s*<\/w:body>[\s\S]*)$/);
+            if (!m) throw new Error('estrutura do modelo não reconhecida');
+            const [, inicio, corpo, fim] = m;
 
-            const blob = await zipTurma.generateAsync({ type: 'blob' });
+            let idImg = 1;
+            const paginas = lista.map(a =>
+                preencherModelo(corpo, a, lerRel(relatoriosSalvosMap[a.id]), dataImp)
+                    .replace(/(<wp:docPr\b[^>]*?\sid=")\d+(")/g, (x, p, q) => p + (idImg++) + q)
+            );
+            doc.file('word/document.xml', inicio + paginas.join(quebraPagina) + fim);
+
+            const blob = await doc.generateAsync({
+                type: 'blob', compression: 'DEFLATE',
+                mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = nomePasta + '.zip';
+            link.download = nomeArquivoSeguro(turma) + '.docx';
             document.body.appendChild(link);
             link.click();
             link.remove();
             setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+            // pausa curta para o navegador aceitar vários downloads seguidos
             await new Promise(r => setTimeout(r, 700));
         }
-        mostrarToast(`${turmas.length} turma(s) baixada(s).`);
+        mostrarToast(`${turmas.length} arquivo(s) baixado(s), um por turma.`);
     } catch (e) {
         mostrarToast('Não foi possível gerar os arquivos: ' + (e.message || e));
     } finally {
