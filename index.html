@@ -21,6 +21,9 @@
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], display: ['Poppins', 'Inter', 'sans-serif'] } } } };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
         :root { --ink:#14213d; --muted:#556072; --line:#e6e9f0; --bg:#f6f7fb; --brand:#4f46e5; --brand-d:#4338ca; }
@@ -54,71 +57,76 @@
         .aba-ativa:hover { background: var(--ink); }
 
         .foto-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 16px; border: 1px solid var(--line); cursor: pointer; transition: transform .15s ease; flex-shrink: 0; }
-@media (min-width: 640px) { .foto-preview { width: 52px; height: 52px; border-radius: 14px; } }
+        @media (min-width: 640px) { .foto-preview { width: 52px; height: 52px; border-radius: 14px; } }
         .foto-preview:hover { transform: scale(1.05); }
 
-/* Lista de seleção própria do site */
-select.cs-oculto { display: none !important; }
-.cs { position: relative; width: 100%; }
-.cs-btn { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 15px; color: var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
-.cs-btn.cs-sm { min-height: 40px; font-size: 13px; }
-.cs-btn:focus-visible, .cs-btn[aria-expanded="true"] { border-color: var(--brand); outline: 3px solid #c7d2fe; outline-offset: 0; }
-.cs-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cs-vazio { color: var(--muted); }
-.cs-lista { position: fixed; z-index: 80; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -12px rgba(20,33,61,.35); padding: 6px; overflow-y: auto; }
-.cs-op { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; color: var(--ink); background: transparent; }
-.cs-op > span { flex: 1; text-align: left; }
-.cs-op:hover, .cs-op:focus-visible { background: #eef0fb; outline: none; }
-.cs-op[aria-selected="true"] { background: #eef0fb; color: var(--brand-d); font-weight: 600; }
-        
+        /* Lista de seleção própria do site */
+        select.cs-oculto { display: none !important; }
+        .cs { position: relative; width: 100%; }
+        .cs-btn { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 15px; color: var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
+        .cs-btn.cs-sm { min-height: 40px; font-size: 13px; }
+        .cs-btn:focus-visible, .cs-btn[aria-expanded="true"] { border-color: var(--brand); outline: 3px solid #c7d2fe; outline-offset: 0; }
+        .cs-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cs-vazio { color: var(--muted); }
+        .cs-lista { position: fixed; z-index: 80; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -12px rgba(20,33,61,.35); padding: 6px; overflow-y: auto; }
+        .cs-op { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; color: var(--ink); background: transparent; }
+        .cs-op > span { flex: 1; text-align: left; }
+        .cs-op:hover, .cs-op:focus-visible { background: #eef0fb; outline: none; }
+        .cs-op[aria-selected="true"] { background: #eef0fb; color: var(--brand-d); font-weight: 600; }
+
         /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(20,33,61,.6); z-index: 50; align-items: flex-end; justify-content: center; padding: 0; }
         .modal.active { display: flex; }
-        .modal-box { animation: subir .2s ease-out; }        @keyframes subir { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .modal-box { animation: subir .2s ease-out; }
+        @keyframes subir { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
         @media (min-width: 640px) { .modal { align-items: center; padding: 20px; } }
 
         /* Popup rápido de confirmação */
-.toast { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 16px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 14px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 70; box-shadow: 0 10px 30px -10px rgba(20,33,61,.5); max-width: calc(100vw - 32px); text-align: center; }
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
+        .toast { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 16px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 14px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 70; box-shadow: 0 10px 30px -10px rgba(20,33,61,.5); max-width: calc(100vw - 32px); text-align: center; }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
         @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
         /* INÍCIO TOPO */
-.btn-topo { position: fixed; right: 16px; bottom: 88px; width: 44px; height: 44px; border-radius: 999px; background: rgba(255,255,255,.92); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 6px 18px -8px rgba(20,33,61,.35); display: grid; place-items: center; cursor: pointer; z-index: 35; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s ease, transform .2s ease, background-color .15s ease; }
-.btn-topo.show { opacity: .85; transform: none; pointer-events: auto; }
-.btn-topo:hover { opacity: 1; background: #fff; }
-/* FIM TOPO */
+        .btn-topo { position: fixed; right: 16px; bottom: 88px; width: 44px; height: 44px; border-radius: 999px; background: rgba(255,255,255,.92); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 6px 18px -8px rgba(20,33,61,.35); display: grid; place-items: center; cursor: pointer; z-index: 35; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s ease, transform .2s ease, background-color .15s ease; }
+        .btn-topo.show { opacity: .85; transform: none; pointer-events: auto; }
+        .btn-topo:hover { opacity: 1; background: #fff; }
+        /* FIM TOPO */
+
+        /* Folha usada para gerar os PDFs (fica fora da tela) */
+        #pdfRender { position: absolute; left: -10000px; top: 0; width: 210mm; }
+        #pdfRender .folha { position: relative; width: 210mm; height: 297mm; padding: 24mm 20mm 20mm; box-sizing: border-box; overflow: hidden; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #000; background: #fff; }
+        #pdfRender .folha .timbrado { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+        #pdfRender .folha .conteudo { position: relative; z-index: 1; }
+        #pdfRender .folha p { margin: 0 0 3.8mm; line-height: 1.15; }
+        #pdfRender .rt { text-align: center; font-weight: 700; }
+        #pdfRender .rg { display: grid; grid-template-columns: var(--c) 1fr; }
+        #pdfRender .rj { text-align: justify; }
+        #pdfRender .ri { font-weight: 700; margin-bottom: 1.2mm !important; }
+        #pdfRender .rh { font-weight: 700; margin-bottom: 1mm !important; }
+        #pdfRender .rh1 { margin-top: 6mm !important; }
+        #pdfRender .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
+        #pdfRender .rxo { min-height: 14mm; }
+
         @media print { .no-print { display: none !important; } body { background: #fff; } }
-    #folhaImpressao { display: none; }
-@media print {
-    @page { size: A4; margin: 0; }
-    body > *:not(#folhaImpressao) { display: none !important; }
-    #folhaImpressao { display: block; }
-    .folha { position: relative; width: 210mm; height: 297mm; padding: 24mm 20mm 20mm; box-sizing: border-box; overflow: hidden; break-after: page; page-break-after: always; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #000; }
-    .folha:last-child { break-after: auto; page-break-after: auto; }
-    .folha .timbrado { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
-    .folha .conteudo { position: relative; z-index: 1; }
-    .folha p { margin: 0 0 3.8mm; line-height: 1.15; }
-    .rt { text-align: center; font-weight: 700; }
-    .rg { display: grid; grid-template-columns: var(--c) 1fr; }
-    .rj { text-align: justify; }
-    .ri { font-weight: 700; margin-bottom: 1.2mm !important; }
-    .rh { font-weight: 700; margin-bottom: 1mm !important; }
-    .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
-    .rh1 { margin-top: 6mm !important; }
-}
-/* PDF individual por aluno: a folha é montada fora da tela com o mesmo visual da impressão */
-#pdfRender { position: fixed; left: -10000px; top: 0; width: 210mm; background: #fff; }
-#pdfRender .folha { position: relative; width: 210mm; height: 297mm; padding: 24mm 20mm 20mm; box-sizing: border-box; overflow: hidden; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #000; background: #fff; }
-#pdfRender .folha .timbrado { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
-#pdfRender .folha .conteudo { position: relative; z-index: 1; }
-#pdfRender .folha p { margin: 0 0 3.8mm; line-height: 1.15; }
-#pdfRender .rt { text-align: center; font-weight: 700; }
-#pdfRender .rg { display: grid; grid-template-columns: var(--c) 1fr; }
-#pdfRender .rj { text-align: justify; }
-#pdfRender .ri { font-weight: 700; margin-bottom: 1.2mm !important; }
-#pdfRender .rh { font-weight: 700; margin-bottom: 1mm !important; }
-#pdfRender .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
-#pdfRender .rh1 { margin-top: 6mm !important; }
-#pdfRender u { text-decoration: none; border-bottom: 1px solid #000; }
+        #folhaImpressao { display: none; }
+        @media print {
+            @page { size: A4; margin: 0; }
+            body > *:not(#folhaImpressao) { display: none !important; }
+            #folhaImpressao { display: block; }
+            .folha { position: relative; width: 210mm; height: 297mm; padding: 24mm 20mm 20mm; box-sizing: border-box; overflow: hidden; break-after: page; page-break-after: always; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #000; }
+            .folha:last-child { break-after: auto; page-break-after: auto; }
+            .folha .timbrado { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+            .folha .conteudo { position: relative; z-index: 1; }
+            .folha p { margin: 0 0 3.8mm; line-height: 1.15; }
+            .rt { text-align: center; font-weight: 700; }
+            .rg { display: grid; grid-template-columns: var(--c) 1fr; }
+            .rj { text-align: justify; }
+            .ri { font-weight: 700; margin-bottom: 1.2mm !important; }
+            .rh { font-weight: 700; margin-bottom: 1mm !important; }
+            .rh1 { margin-top: 6mm !important; }
+            .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
+            .rxo { min-height: 14mm; }
+        }
     </style>
 </head>
 <body>
@@ -142,15 +150,16 @@ select.cs-oculto { display: none !important; }
     </div>
 </div>
 <!-- FIM LOGIN -->
-    <!-- MODAL DE DETALHES -->
-    <div id="modalAluno" class="modal no-print" onclick="fecharModal(event)" role="dialog" aria-modal="true" aria-label="Detalhes do aluno">
-        <div class="modal-box bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
-            <div id="modalConteudo"></div>
-            <button onclick="document.getElementById('modalAluno').classList.remove('active')" class="btn btn-primary w-full mt-6">Fechar e salvar</button>
-        </div>
-    </div>
 
-    <!-- CONFIRMAÇÃO DE EXCLUSÃO (do site) -->
+<!-- MODAL DE DETALHES -->
+<div id="modalAluno" class="modal no-print" onclick="fecharModal(event)" role="dialog" aria-modal="true" aria-label="Detalhes do aluno">
+    <div class="modal-box bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+        <div id="modalConteudo"></div>
+        <button onclick="document.getElementById('modalAluno').classList.remove('active')" class="btn btn-primary w-full mt-6">Fechar e salvar</button>
+    </div>
+</div>
+
+<!-- CONFIRMAÇÃO DE EXCLUSÃO (do site) -->
 <div id="modalConfirma" class="modal no-print" role="alertdialog" aria-modal="true" aria-labelledby="confirmaTitulo" onclick="if (event.target === this) responderConfirma(false)">
     <div class="modal-box bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
         <h2 id="confirmaTitulo" class="font-display font-semibold text-xl"></h2>
@@ -161,6 +170,7 @@ select.cs-oculto { display: none !important; }
         </div>
     </div>
 </div>
+
 <!-- JANELA DE TEXTO (renomear turma) -->
 <div id="modalPrompt" class="modal no-print" role="dialog" aria-modal="true" aria-labelledby="promptTitulo" onclick="if (event.target === this) responderPrompt(false)">
     <div class="modal-box bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl" onclick="event.stopPropagation()">
@@ -173,22 +183,25 @@ select.cs-oculto { display: none !important; }
         </div>
     </div>
 </div>
+
 <!-- INÍCIO TOPO -->
 <button id="btnTopo" class="btn-topo no-print" onclick="voltarAoTopo()" aria-label="Voltar ao topo" title="Voltar ao topo">
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
 </button>
 <!-- FIM TOPO -->
-    <!-- POPUP RÁPIDO -->
+
+<!-- POPUP RÁPIDO -->
 <div id="toast" class="toast no-print" role="status" aria-live="polite"></div>
-    
-    <!-- CABEÇALHO / MENU -->
+
+<!-- CABEÇALHO / MENU -->
 <header class="no-print sticky top-0 z-40 bg-white/90 backdrop-blur border-b" style="border-color:var(--line)">
     <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <a href="#" onclick="mostrarAba('alunos'); return false;" class="font-display font-bold text-lg" style="color:var(--ink)">Ed. Física</a>
         <nav class="flex items-center gap-1 text-sm font-medium" aria-label="Principal">
             <button id="nav-alunos" onclick="mostrarAba('alunos')" aria-current="page" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 bg-indigo-50 text-indigo-700">Alunos</button>
-<button id="nav-cadastro" onclick="mostrarAba('cadastro')" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100">Cadastrar</button>
-<button onclick="sair()" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 text-gray-500">Sair</button>        </nav>
+            <button id="nav-cadastro" onclick="mostrarAba('cadastro')" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100">Cadastrar</button>
+            <button onclick="sair()" class="px-4 min-h-[40px] rounded-lg hover:bg-gray-100 text-gray-500">Sair</button>
+        </nav>
     </div>
 </header>
 
@@ -199,7 +212,7 @@ select.cs-oculto { display: none !important; }
 
         <section id="alunos" class="no-print">
             <h1 class="font-display font-bold text-3xl md:text-4xl leading-tight">Relatórios de Educação Física</h1>
-            <p class="mt-2 text-base max-w-xl" style="color:var(--muted)">Escolha a turma, ajuste gênero e perfil de cada aluno e gere os relatórios.</p>
+            <p class="mt-2 text-base max-w-xl" style="color:var(--muted)">Escolha a turma, ajuste gênero e perfis de cada aluno e gere os relatórios.</p>
 
             <div id="abasContainer" class="flex gap-2 mt-8 overflow-x-auto pb-2" role="tablist"></div>
             <div id="acoesTurma" class="flex gap-2 mt-3 hidden">
@@ -213,7 +226,7 @@ select.cs-oculto { display: none !important; }
         </section>
 
         <!-- Botão de ação sempre visível -->
-                <div class="no-print sticky bottom-0 z-30 -mx-4 px-4 py-3 bg-white/90 backdrop-blur border-t flex gap-2 justify-center md:justify-end" style="border-color:var(--line)">
+        <div class="no-print sticky bottom-0 z-30 -mx-4 px-4 py-3 bg-white/90 backdrop-blur border-t flex gap-2 justify-center md:justify-end" style="border-color:var(--line)">
             <button onclick="irParaPrimeiroRelatorio()" class="btn btn-ghost flex-1 md:flex-none md:px-6">Ir para relatórios</button>
             <button id="btnConfig" onclick="alternarConfigRapida()" aria-pressed="false" class="btn btn-ghost flex-1 md:flex-none !px-3 md:!px-6">Config. rápida</button>
             <button onclick="gerarTurmaToda()" class="btn btn-primary flex-[2] md:flex-none md:px-10">Gerar relatórios da turma</button>
@@ -224,9 +237,10 @@ select.cs-oculto { display: none !important; }
             <div class="flex justify-between items-center gap-4 mb-6 no-print">
                 <h2 class="font-display font-semibold text-2xl">Relatórios gerados</h2>
                 <div class="flex gap-2">
-    <button onclick="copiarRelatorios()" class="btn btn-ghost">Copiar</button>
-    <button onclick="imprimirRelatorios()" class="btn btn-ghost">Imprimir / PDF</button>
-</div>
+                    <button onclick="copiarRelatorios()" class="btn btn-ghost">Copiar</button>
+                    <button id="btnPdf" onclick="baixarPDFs()" class="btn btn-primary">Baixar PDFs</button>
+                    <button onclick="imprimirRelatorios()" class="btn btn-ghost">Imprimir</button>
+                </div>
             </div>
             <div id="listaRelatorios" class="space-y-4"></div>
         </section>
@@ -242,17 +256,17 @@ select.cs-oculto { display: none !important; }
                     <div><label class="label" for="nomeInd">Nome</label><input type="text" id="nomeInd" class="field" oninput="document.getElementById('generoInd').value = inferirGenero(this.value)"></div>
                     <div><label class="label" for="turmaInd">Turma (ex: 6º Ano A)</label><input type="text" id="turmaInd" class="field"></div>
                     <div>
-    <label class="label" for="generoInd">Gênero</label>
-    <select id="generoInd" class="field"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
-</div>
-<div>
-    <label class="label" for="perfilInd">Perfil pedagógico</label>
-    <select id="perfilInd" class="field"></select>
-</div>
-<div>
-    <label class="label" for="perfilCompInd">Perfil comportamental e emocional</label>
-    <select id="perfilCompInd" class="field"></select>
-</div>
+                        <label class="label" for="generoInd">Gênero</label>
+                        <select id="generoInd" class="field"><option value="masc">Masculino</option><option value="fem">Feminino</option></select>
+                    </div>
+                    <div>
+                        <label class="label" for="perfilInd">Perfil pedagógico</label>
+                        <select id="perfilInd" class="field"></select>
+                    </div>
+                    <div>
+                        <label class="label" for="perfilCompInd">Perfil comportamental e emocional</label>
+                        <select id="perfilCompInd" class="field"></select>
+                    </div>
                     <button onclick="salvarIndividual()" class="btn btn-primary w-full">Salvar aluno</button>
                 </div>
 
@@ -267,822 +281,826 @@ select.cs-oculto { display: none !important; }
     </div>
 </main>
 <div id="folhaImpressao"></div>
-    <script>
-             const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg'.trim();
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<div id="pdfRender" class="no-print" aria-hidden="true"></div>
 
-             const frasesLongas = {
-            participativo: { masc: ["demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe, colabora ativamente com os colegas e respeita as regras estabelecidas.", "é muito participativo e demonstra ótima compreensão das dinâmicas esportivas. Sua coordenação motora evoluiu bastante, e ele sempre incentiva o grupo, mantendo um clima de cooperação nas práticas.", "apresenta uma postura colaborativa exemplar, engajando-se ativamente nos desafios motores. Demonstra agilidade, interesse constante e respeito às normas, sendo um aluno que agrega muito valor ao dinamismo da turma.", "mostra grande dedicação nas aulas práticas, destacando-se pela facilidade em assimilar novos movimentos e pela prontidão em auxiliar os colegas durante as atividades em grupo.", "participa com notável interesse de todos os jogos, demonstrando um espírito esportivo louvável. Sua evolução técnica e social nas aulas é muito clara, sempre demonstrando respeito pelas regras e pelos companheiros."], fem: ["demonstra um excelente engajamento nas aulas. Participa com entusiasmo de todas as atividades, exibindo um desenvolvimento motor adequado. Valoriza o espírito de equipe, colabora ativamente com as colegas e respeita as regras estabelecidas.", "é muito participativa e demonstra ótima compreensão das dinâmicas esportivas. Sua coordenação motora evoluiu bastante, e ela sempre incentiva o grupo, mantendo um clima de cooperação nas práticas.", "apresenta uma postura colaborativa exemplar, engajando-se ativamente nos desafios motores. Demonstra agilidade, interesse constante e respeito às normas, sendo uma aluna que agrega muito valor ao dinamismo da turma.", "mostra grande dedicação nas aulas práticas, destacando-se pela facilidade em assimilar novos movimentos e pela prontidão em auxiliar as colegas durante as atividades em grupo.", "participa com notável interesse de todos os jogos, demonstrando um espírito esportivo louvável. Sua evolução técnica e social nas aulas é muito clara, sempre demonstrando respeito pelas regras e pelas companheiras."] },
-            pouco_participativo: { masc: ["nas práticas, tem se mostrado um aluno observador e cauteloso. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta seguro para explorar suas potencialidades junto ao grupo.", "tem sido um aluno atento e cuidadoso em suas execuções individuais. Valorizamos seu ritmo de aprendizagem e estamos incentivando-o a ampliar sua participação oral e física, respeitando sempre sua forma de se integrar aos jogos coletivos.", "é um aluno reservado, mas notamos que observa atentamente cada instrução. Com estímulos constantes, tem dado pequenos passos importantes na integração com os colegas, ganhando progressivamente mais segurança nas atividades.", "demonstra uma postura cautelosa, mas sempre acompanha as instruções com atenção. Estamos trabalhando sua autoconfiança para que se sinta mais seguro para arriscar movimentos novos nas aulas práticas.", "tem um ritmo próprio e prefere observar antes de atuar, o que é respeitado. Gradualmente, estamos notando uma maior abertura para atividades em pequenos grupos, onde se sente mais seguro para participar."], fem: ["nas práticas, tem se mostrado uma aluna observadora e cautelosa. Incentivamos sua interação nos jogos, respeitando seu tempo. Notamos crescimento na sua confiança, seguindo o trabalho para que se sinta segura para explorar suas potencialidades junto ao grupo.", "tem sido uma aluna atenta e cuidadosa em suas execuções individuais. Valorizamos seu ritmo de aprendizagem e estamos incentivando-a a ampliar sua participação oral e física, respeitando sempre sua forma de se integrar aos jogos coletivos.", "é uma aluna reservada, mas notamos que observa atentamente cada instrução. Com estímulos constantes, tem dado pequenos passos importantes na integração com as colegas, ganhando progressivamente mais segurança nas atividades.", "demonstra uma postura cautelosa, mas sempre acompanha as instruções com atenção. Estamos trabalhando sua autoconfiança para que se sinta mais segura para arriscar movimentos novos nas aulas práticas.", "tem um ritmo próprio e prefere observar antes de atuar, o que é respeitado. Gradualmente, estamos notando uma maior abertura para atividades em pequenos grupos, onde se sente mais segura para participar."] },
-            agitado: { masc: ["possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", "é muito entusiasmado nas práticas motoras. Estamos auxiliando-o a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.", "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo.", "apresenta um entusiasmo constante que, quando bem direcionado, resulta em um ótimo desempenho. Estamos trabalhando o foco e a atenção aos detalhes para que essa energia seja transformada em técnica e precisão durante os jogos.", "é uma criança muito ativa e criativa. Trabalhamos para que essa vivacidade seja aliada ao aprendizado das regras e ao respeito aos limites do jogo coletivo, sempre valorizando seu alto potencial de participação."], fem: ["possui uma energia contagiante e muita criatividade, o que enriquece nossas aulas. Trabalhamos diariamente para direcionar esse potencial para a execução técnica dos movimentos e para o foco nas regras dos jogos. É gratificante observar como direciona essa vivacidade para superar desafios.", "é muito entusiasmada nas práticas motoras. Estamos auxiliando-a a canalizar essa grande energia para melhorar sua coordenação e concentração nas tarefas coletivas, o que tem gerado resultados muito positivos e um melhor controle de seus movimentos.", "demonstra um alto nível de vivacidade, trazendo uma dinâmica especial ao grupo. Com apoio constante, tem aprendido a regular seu ritmo e focar sua energia de maneira mais produtiva, melhorando seu desempenho técnico e esportivo.", "apresenta um entusiasmo constante que, quando bem direcionado, resulta em um ótimo desempenho. Estamos trabalhando o foco e a atenção aos detalhes para que essa energia seja transformada em técnica e precisão durante os jogos.", "é uma criança muito ativa e criativa. Trabalhamos para que essa vivacidade seja aliada ao aprendizado das regras e ao respeito aos limites do jogo coletivo, sempre valorizando seu alto potencial de participação."] },
-            melhorar: { masc: ["tem se dedicado com esforço em suas trajetórias nas atividades práticas. Focamos em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes.", "mostra-se interessado em evoluir e superar obstáculos. Estamos focados em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais.", "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ele desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula.", "está em uma fase de desenvolvimento de suas capacidades motoras básicas. Com paciência e exercícios adequados, estamos estimulando seu progresso e fortalecendo seu interesse pelas práticas esportivas, respeitando seu momento.", "apresenta potencial e estamos focados em ampliar sua confiança nas atividades. Com o suporte da família junto à nossa parceria pedagógica, caminhamos passo a passo para conquistas importantes no desenvolvimento de suas habilidades."], fem: ["tem se dedicado com esforço em suas trajetórias nas atividades práticas. Focamos em fortalecer sua coordenação motora e sua confiança no ambiente esportivo. Acreditamos plenamente em seu progresso e, com o suporte da família, seguimos caminhando para conquistas importantes.", "mostra-se interessada em evoluir e superar obstáculos. Estamos focadas em ampliar sua segurança motora e autoconfiança. Com constância nos exercícios, temos certeza de que alcançará grandes progressos e superará seus limites atuais.", "tem mostrado determinação em vencer pequenos desafios. O suporte da família junto à nossa dedicação na escola garantirá que ela desenvolva suas habilidades motoras com mais tranquilidade, foco e sucesso em cada aula.", "está em uma fase de desenvolvimento de suas capacidades motoras básicas. Com paciência e exercícios adequados, estamos estimulando seu progresso e fortalecendo seu interesse pelas práticas esportivas, respeitando seu momento.", "apresenta potencial e estamos focadas em ampliar sua confiança nas atividades. Com o suporte da família junto à nossa parceria pedagógica, caminhamos passo a passo para conquistas importantes no desenvolvimento de suas habilidades."] }
-        };
+<script>
+    const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvanZ5bmllcGFsb2V3a3Ftd3NxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjk5OTMsImV4cCI6MjEwNzYwNTk5M30.e8I9_Ks-vStABgmh6fWMA_cXhGfVOS5cyzypKcG1Exg'.trim();
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let alunos = [];
-        let turmaAtiva = "";
-        let relatoriosSalvosMap = {};
-let carregando = true;
-        const SEM_FOTO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%23e6e9f0'/><circle cx='32' cy='25' r='11' fill='%23a3abbd'/><path d='M10 64c2-14 12-22 22-22s20 8 22 22z' fill='%23a3abbd'/></svg>";
+    let alunos = [];
+    let turmaAtiva = "";
+    let relatoriosSalvosMap = {};
+    let carregando = true;
 
-        // INÍCIO ÍCONES
-const SVG_MASC = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#3b82f6'/></svg>`;
-const SVG_FEM = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#ec4899'/></svg>`;
+    const SEM_FOTO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%23e6e9f0'/><circle cx='32' cy='25' r='11' fill='%23a3abbd'/><path d='M10 64c2-14 12-22 22-22s20 8 22 22z' fill='%23a3abbd'/></svg>";
 
-const ICONE_MASC = 'data:image/svg+xml;utf8,' + encodeURIComponent(SVG_MASC);
-const ICONE_FEM = 'data:image/svg+xml;utf8,' + encodeURIComponent(SVG_FEM);
-// FIM ÍCONES
-        async function carregar(manterTurma = null) {
-    const [r1, r2] = await Promise.all([
-        sb.from('alunos').select('*').order('nome'),
-        sb.from('relatorios').select('*')
-    ]);
-    alunos = r1.data || [];
-    relatoriosSalvosMap = {};
-    if (r2.data) r2.data.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
-    carregando = false;
-    if (manterTurma) turmaAtiva = manterTurma;
-    else if (alunos.length > 0 && (!turmaAtiva || !alunos.some(a => a.turma === turmaAtiva))) turmaAtiva = alunos[0].turma;
-    renderTabs(); renderTabela(); renderRelatorios();
-}
+    // INÍCIO ÍCONES
+    const SVG_MASC = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#3b82f6'/></svg>`;
+    const SVG_FEM = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='28' fill='#ec4899'/></svg>`;
 
-        async function salvarIndividual() {
-    const nome = document.getElementById('nomeInd').value.trim();
-    const turma = document.getElementById('turmaInd').value.trim();
-    const perfil = document.getElementById('perfilInd').value || null;
-    const perfil_comp = document.getElementById('perfilCompInd').value || null;
-    if (!nome || !turma) return mostrarToast('Preencha nome e turma.');
-    const { data, error } = await sb.from('alunos')
-        .insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil, perfil_comp }])
-        .select().single();
-    if (error) return mostrarToast('Não foi possível salvar. Tente de novo.');
-    document.getElementById('nomeInd').value = "";
-    document.getElementById('perfilInd').value = "";
-    document.getElementById('perfilCompInd').value = "";
-    await carregar(turma);
-    if (perfil && perfil_comp) {
-        await gerarIndividual(data.id, false);
-        mostrarToast('Aluno cadastrado e relatório gerado!');
-    } else {
-        mostrarToast('Aluno cadastrado. Escolha os dois perfis para gerar o relatório.');
+    const ICONE_MASC = 'data:image/svg+xml;utf8,' + encodeURIComponent(SVG_MASC);
+    const ICONE_FEM = 'data:image/svg+xml;utf8,' + encodeURIComponent(SVG_FEM);
+    // FIM ÍCONES
+
+    async function carregar(manterTurma = null) {
+        const [r1, r2] = await Promise.all([
+            sb.from('alunos').select('*').order('nome'),
+            sb.from('relatorios').select('*')
+        ]);
+        alunos = r1.data || [];
+        relatoriosSalvosMap = {};
+        if (r2.data) r2.data.forEach(r => relatoriosSalvosMap[r.aluno_id] = r.texto_completo);
+        carregando = false;
+        if (manterTurma) turmaAtiva = manterTurma;
+        else if (alunos.length > 0 && (!turmaAtiva || !alunos.some(a => a.turma === turmaAtiva))) turmaAtiva = alunos[0].turma;
+        renderTabs(); renderTabela(); renderRelatorios();
     }
-}
-// INÍCIO GÊNERO
-const NOMES_FEM = new Set(['ingrid','beatriz','isabel','raquel','rachel','miriam','mirian','carmen','nicole','ester','esther','lais','tais','thais','yasmin','yasmim','jasmin','jasmim','karen','kellen','suelen','evelyn','evelin','eloise','heloise','louise','joyce','liz','lis','luz','rute','ruth','sarah','hannah','deborah','noemi','isis','iris','maite','mel','cris','dulce','lilian','ellen','elen','helen','agnes','ines','gisele','alice','aline','eliane']);
-const NOMES_MASC = new Set(['luca','gianluca','joshua','kaua','caua','bira','jota']);
 
-function inferirGenero(nomeCompleto) {
-    const primeiro = (nomeCompleto || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/^[^a-z]+/, '')
-        .split(/\s+/)[0] || '';
-    if (NOMES_FEM.has(primeiro)) return 'fem';
-    if (NOMES_MASC.has(primeiro)) return 'masc';
-    if (/(elle|ele|ine|ane|ice|lly|ly|lyn)$/.test(primeiro)) return 'fem';
-    if (primeiro.endsWith('a')) return 'fem';
-    return 'masc';
-}
-// FIM GÊNERO
-async function salvarMassa() {
-    const texto = document.getElementById('bulkAlunos').value.trim();
-    const turma = document.getElementById('turmaBulk').value.trim();
-    if (!texto || !turma) return mostrarToast('Preencha os nomes e a turma.');
+    async function salvarIndividual() {
+        const nome = document.getElementById('nomeInd').value.trim();
+        const turma = document.getElementById('turmaInd').value.trim();
+        const perfil = document.getElementById('perfilInd').value || null;
+        const perfil_comp = document.getElementById('perfilCompInd').value || null;
+        if (!nome || !turma) return mostrarToast('Preencha nome e turma.');
+        const { data, error } = await sb.from('alunos')
+            .insert([{ nome, turma, genero: document.getElementById('generoInd').value, perfil, perfil_comp }])
+            .select().single();
+        if (error) return mostrarToast('Não foi possível salvar. Tente de novo.');
+        document.getElementById('nomeInd').value = "";
+        document.getElementById('perfilInd').value = "";
+        document.getElementById('perfilCompInd').value = "";
+        await carregar(turma);
+        if (perfil && perfil_comp) {
+            await gerarIndividual(data.id, false);
+            mostrarToast('Aluno cadastrado e relatório gerado!');
+        } else {
+            mostrarToast('Aluno cadastrado. Escolha os dois perfis para gerar o relatório.');
+        }
+    }
+
+    // INÍCIO GÊNERO
+    const NOMES_FEM = new Set(['ingrid','beatriz','isabel','raquel','rachel','miriam','mirian','carmen','nicole','ester','esther','lais','tais','thais','yasmin','yasmim','jasmin','jasmim','karen','kellen','suelen','evelyn','evelin','eloise','heloise','louise','joyce','liz','lis','luz','rute','ruth','sarah','hannah','deborah','noemi','isis','iris','maite','mel','cris','dulce','lilian','ellen','elen','helen','agnes','ines','gisele','alice','aline','eliane']);
+    const NOMES_MASC = new Set(['luca','gianluca','joshua','kaua','caua','bira','jota']);
+
+    function inferirGenero(nomeCompleto) {
+        const primeiro = (nomeCompleto || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/^[^a-z]+/, '')
+            .split(/\s+/)[0] || '';
+        if (NOMES_FEM.has(primeiro)) return 'fem';
+        if (NOMES_MASC.has(primeiro)) return 'masc';
+        if (/(elle|ele|ine|ane|ice|lly|ly|lyn)$/.test(primeiro)) return 'fem';
+        if (primeiro.endsWith('a')) return 'fem';
+        return 'masc';
+    }
+    // FIM GÊNERO
+
+    async function salvarMassa() {
+        const texto = document.getElementById('bulkAlunos').value.trim();
+        const turma = document.getElementById('turmaBulk').value.trim();
+        if (!texto || !turma) return mostrarToast('Preencha os nomes e a turma.');
         const novos = texto.split('\n').filter(n => n.trim()).map(n => ({ nome: n.trim(), turma, genero: inferirGenero(n.trim()), perfil: null, perfil_comp: null }));
-    const { error } = await sb.from('alunos').insert(novos);
-    if (error) return mostrarToast('Não foi possível importar. Tente de novo.');
-    document.getElementById('bulkAlunos').value = ""; document.getElementById('turmaBulk').value = "";
-    await carregar(turma);
+        const { error } = await sb.from('alunos').insert(novos);
+        if (error) return mostrarToast('Não foi possível importar. Tente de novo.');
+        document.getElementById('bulkAlunos').value = ""; document.getElementById('turmaBulk').value = "";
+        await carregar(turma);
         const nFem = novos.filter(n => n.genero === 'fem').length;
-    mostrarToast(novos.length === 1 ? '1 aluno cadastrado. Confira o gênero.' : `${novos.length} alunos cadastrados (${nFem} fem., ${novos.length - nFem} masc.). Confira o gênero.`);
-}
+        mostrarToast(novos.length === 1 ? '1 aluno cadastrado. Confira o gênero.' : `${novos.length} alunos cadastrados (${nFem} fem., ${novos.length - nFem} masc.). Confira o gênero.`);
+    }
 
-        async function atualizarDado(id, campo, valor) {
+    async function atualizarDado(id, campo, valor) {
+        const aluno = alunos.find(a => a.id === id);
+        if (aluno) {
+            aluno[campo] = valor;
+            await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
+            if (campo === 'turma' || campo === 'nome') await carregar(aluno.turma); else renderTabela();
+        }
+    }
+
+    function abrirModalAluno(id) {
+        const a = alunos.find(al => al.id === id);
+        document.getElementById('modalConteudo').innerHTML = `
+            <div class="w-full text-center">
+                <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-44 h-44 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
+                <label class="btn btn-primary btn-sm mt-3 cursor-pointer" title="Trocar foto">
+                    Trocar foto <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
+                </label>
+            </div>
+            <div class="mt-5 text-left">
+                <label class="label" for="mNome">Nome</label>
+                <input id="mNome" type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" class="field font-semibold">
+
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div>
+                        <label class="label" for="mTurma">Turma</label>
+                        <input id="mTurma" type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value.trim()); abrirModalAluno('${a.id}');" class="field">
+                    </div>
+                    <div>
+                        <label class="label" for="mGenero">Gênero</label>
+                        <select id="mGenero" onchange="atualizarDado('${a.id}', 'genero', this.value); abrirModalAluno('${a.id}');" class="field">
+                            <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
+                            <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label class="label" for="mPerfil">Perfil pedagógico</label>
+                    <select id="mPerfil" onchange="trocarPerfil('${a.id}', 'perfil', this.value)" class="field">${opcoesPerfil(PERFIS_PED, a.perfil)}</select>
+                </div>
+                <div class="mt-4">
+                    <label class="label" for="mPerfilComp">Perfil comportamental e emocional</label>
+                    <select id="mPerfilComp" onchange="trocarPerfil('${a.id}', 'perfil_comp', this.value)" class="field">${opcoesPerfil(PERFIS_COMP, a.perfil_comp)}</select>
+                </div>
+            </div>
+        `;
+        document.getElementById('modalAluno').classList.add('active');
+    }
+
+    function fecharModal(e) { if (e && e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active'); }
+
+    function mostrarAba(nome) {
+        document.getElementById('view-alunos').classList.toggle('hidden', nome !== 'alunos');
+        document.getElementById('view-cadastro').classList.toggle('hidden', nome !== 'cadastro');
+        ['alunos', 'cadastro'].forEach(n => {
+            const b = document.getElementById('nav-' + n);
+            const ativo = n === nome;
+            b.classList.toggle('bg-indigo-50', ativo);
+            b.classList.toggle('text-indigo-700', ativo);
+            b.setAttribute('aria-current', ativo ? 'page' : 'false');
+        });
+        window.scrollTo({ top: 0 });
+    }
+
+    // Espera a tela terminar de se reorganizar e só então rola até o relatório
+    function rolarAte(id) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const el = document.getElementById('rel-' + id);
+            if (!el) return;
+            const y = el.getBoundingClientRect().top + window.scrollY - 90;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+            el.classList.add('ring-4', 'ring-indigo-300');
+            setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-300'), 1600);
+        }));
+    }
+
+    let toastTimer;
+    function mostrarToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    let confirmaResolver = null;
+    function confirmarSite(titulo, texto) {
+        return new Promise(resolve => {
+            confirmaResolver = resolve;
+            document.getElementById('confirmaTitulo').textContent = titulo;
+            document.getElementById('confirmaTexto').textContent = texto;
+            document.getElementById('modalConfirma').classList.add('active');
+        });
+    }
+    function responderConfirma(ok) {
+        document.getElementById('modalConfirma').classList.remove('active');
+        if (confirmaResolver) { confirmaResolver(ok); confirmaResolver = null; }
+    }
+    let promptResolver = null;
+    function promptSite(titulo, texto, valorInicial = '') {
+        return new Promise(resolve => {
+            promptResolver = resolve;
+            document.getElementById('promptTitulo').textContent = titulo;
+            document.getElementById('promptTexto').textContent = texto;
+            const input = document.getElementById('promptInput');
+            input.value = valorInicial;
+            document.getElementById('modalPrompt').classList.add('active');
+            setTimeout(() => { input.focus(); input.select(); }, 50);
+        });
+    }
+    function responderPrompt(ok) {
+        const valor = document.getElementById('promptInput').value;
+        document.getElementById('modalPrompt').classList.remove('active');
+        if (promptResolver) { promptResolver(ok ? valor : null); promptResolver = null; }
+    }
+    function irParaRelatorio(id) {
+        if (!relatoriosSalvosMap[id]) return mostrarToast('Esse aluno ainda não tem relatório. Clique em Gerar.');
+        rolarAte(id);
+    }
+
+    async function copiarRelatorios() {
+        const lista = alunos
+            .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+            .sort((a, b) => a.nome.localeCompare(b.nome));
+        if (lista.length === 0) return mostrarToast('Não há relatórios para copiar.');
+
+        const texto = turmaAtiva + '\n\n' + lista
+            .map(a => `${a.nome.toUpperCase()}\n${juntarRel(relatoriosSalvosMap[a.id])}`)
+            .join('\n\n');
+
+        try {
+            await navigator.clipboard.writeText(texto);
+        } catch (e) {
+            // Plano B para navegadores que bloqueiam a área de transferência
+            const t = document.createElement('textarea');
+            t.value = texto;
+            t.style.position = 'fixed';
+            t.style.opacity = '0';
+            document.body.appendChild(t);
+            t.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(t);
+            if (!ok) return mostrarToast('Não foi possível copiar.');
+        }
+        mostrarToast('Relatórios copiados!');
+    }
+
+    // Reduz a foto e salva em WebP: página e banco ficam bem mais leves
+    function comprimirFoto(file) {
+        return new Promise(resolve => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                const escala = Math.min(1, 480 / Math.max(img.width, img.height));
+                const c = document.createElement('canvas');
+                c.width = Math.round(img.width * escala);
+                c.height = Math.round(img.height * escala);
+                c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                URL.revokeObjectURL(url);
+                resolve(c.toDataURL('image/webp', 0.8));
+            };
+            img.src = url;
+        });
+    }
+
+    async function alterarFoto(input, id, doModal = false) {
+        if (input.files && input.files[0]) {
+            const dataUrl = await comprimirFoto(input.files[0]);
+            await sb.from('alunos').update({ foto_url: dataUrl }).eq('id', id);
             const aluno = alunos.find(a => a.id === id);
-            if (aluno) {
-                aluno[campo] = valor;
-                await sb.from('alunos').update({ [campo]: valor }).eq('id', id);
-                if (campo === 'turma' || campo === 'nome') await carregar(aluno.turma); else renderTabela();
-            }
+            if (aluno) aluno.foto_url = dataUrl;
+            if (doModal) abrirModalAluno(id);
+            renderTabela();
+            renderRelatorios();
         }
-
-        function abrirModalAluno(id) {
-    const a = alunos.find(al => al.id === id);
-    document.getElementById('modalConteudo').innerHTML = `
-                       <div class="w-full text-center">
-            <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" class="w-44 h-44 mx-auto object-cover rounded-3xl border border-gray-200 shadow-lg">
-            <label class="btn btn-primary btn-sm mt-3 cursor-pointer" title="Trocar foto">
-                Trocar foto <input type="file" accept="image/*" capture="user" class="hidden" onchange="alterarFoto(this, '${a.id}', true)">
-            </label>
-        </div>
-        <div class="mt-5 text-left">
-            <label class="label" for="mNome">Nome</label>
-            <input id="mNome" type="text" value="${a.nome}" onchange="atualizarDado('${a.id}', 'nome', this.value); abrirModalAluno('${a.id}');" class="field font-semibold">
-
-            <div class="grid grid-cols-2 gap-3 mt-4">
-                <div>
-                    <label class="label" for="mTurma">Turma</label>
-                    <input id="mTurma" type="text" value="${a.turma}" onchange="atualizarDado('${a.id}', 'turma', this.value.trim()); abrirModalAluno('${a.id}');" class="field">
-                </div>
-                <div>
-                    <label class="label" for="mGenero">Gênero</label>
-                    <select id="mGenero" onchange="atualizarDado('${a.id}', 'genero', this.value); abrirModalAluno('${a.id}');" class="field">
-                        <option value="masc" ${a.genero==='masc'?'selected':''}>Masculino</option>
-                        <option value="fem" ${a.genero==='fem'?'selected':''}>Feminino</option>
-                    </select>
-                </div>
-            </div>
-
-           <div class="mt-4">
-    <label class="label" for="mPerfil">Perfil pedagógico</label>
-    <select id="mPerfil" onchange="trocarPerfil('${a.id}', 'perfil', this.value)" class="field">${opcoesPerfil(PERFIS_PED, a.perfil)}</select>
-</div>
-<div class="mt-4">
-    <label class="label" for="mPerfilComp">Perfil comportamental e emocional</label>
-    <select id="mPerfilComp" onchange="trocarPerfil('${a.id}', 'perfil_comp', this.value)" class="field">${opcoesPerfil(PERFIS_COMP, a.perfil_comp)}</select>
-</div>
-        </div>
-    `;
-    document.getElementById('modalAluno').classList.add('active');
-}
-
-        function fecharModal(e) { if (e && e.target.id === 'modalAluno') document.getElementById('modalAluno').classList.remove('active'); }
-function mostrarAba(nome) {
-    document.getElementById('view-alunos').classList.toggle('hidden', nome !== 'alunos');
-    document.getElementById('view-cadastro').classList.toggle('hidden', nome !== 'cadastro');
-    ['alunos', 'cadastro'].forEach(n => {
-        const b = document.getElementById('nav-' + n);
-        const ativo = n === nome;
-        b.classList.toggle('bg-indigo-50', ativo);
-        b.classList.toggle('text-indigo-700', ativo);
-        b.setAttribute('aria-current', ativo ? 'page' : 'false');
-    });
-    window.scrollTo({ top: 0 });
-}
-
-// Espera a tela terminar de se reorganizar e só então rola até o relatório
-function rolarAte(id) {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        const el = document.getElementById('rel-' + id);
-        if (!el) return;
-        const y = el.getBoundingClientRect().top + window.scrollY - 90;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-        el.classList.add('ring-4', 'ring-indigo-300');
-        setTimeout(() => el.classList.remove('ring-4', 'ring-indigo-300'), 1600);
-    }));
-}
-
-let toastTimer;
-function mostrarToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
-}
-
-let confirmaResolver = null;
-function confirmarSite(titulo, texto) {
-    return new Promise(resolve => {
-        confirmaResolver = resolve;
-        document.getElementById('confirmaTitulo').textContent = titulo;
-        document.getElementById('confirmaTexto').textContent = texto;
-        document.getElementById('modalConfirma').classList.add('active');
-    });
-}
-function responderConfirma(ok) {
-    document.getElementById('modalConfirma').classList.remove('active');
-    if (confirmaResolver) { confirmaResolver(ok); confirmaResolver = null; }
-}
-let promptResolver = null;
-function promptSite(titulo, texto, valorInicial = '') {
-    return new Promise(resolve => {
-        promptResolver = resolve;
-        document.getElementById('promptTitulo').textContent = titulo;
-        document.getElementById('promptTexto').textContent = texto;
-        const input = document.getElementById('promptInput');
-        input.value = valorInicial;
-        document.getElementById('modalPrompt').classList.add('active');
-        setTimeout(() => { input.focus(); input.select(); }, 50);
-    });
-}
-function responderPrompt(ok) {
-    const valor = document.getElementById('promptInput').value;
-    document.getElementById('modalPrompt').classList.remove('active');
-    if (promptResolver) { promptResolver(ok ? valor : null); promptResolver = null; }
-}
-function irParaRelatorio(id) {
-    if (!relatoriosSalvosMap[id]) return mostrarToast('Esse aluno ainda não tem relatório. Clique em Gerar.');
-    rolarAte(id);
-}
-        async function copiarRelatorios() {
-    const lista = alunos
-        .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
-        .sort((a, b) => a.nome.localeCompare(b.nome));
-    if (lista.length === 0) return mostrarToast('Não há relatórios para copiar.');
-
-    const texto = turmaAtiva + '\n\n' + lista
-        .map(a => `${a.nome.toUpperCase()}\n${juntarRel(relatoriosSalvosMap[a.id])}`)
-        .join('\n\n');
-
-    try {
-        await navigator.clipboard.writeText(texto);
-    } catch (e) {
-        // Plano B para navegadores que bloqueiam a área de transferência
-        const t = document.createElement('textarea');
-        t.value = texto;
-        t.style.position = 'fixed';
-        t.style.opacity = '0';
-        document.body.appendChild(t);
-        t.select();
-        const ok = document.execCommand('copy');
-        document.body.removeChild(t);
-        if (!ok) return mostrarToast('Não foi possível copiar.');
     }
-    mostrarToast('Relatórios copiados!');
-}
-        
-        // Reduz a foto e salva em WebP: página e banco ficam bem mais leves
-        function comprimirFoto(file) {
-            return new Promise(resolve => {
-                const img = new Image();
-                const url = URL.createObjectURL(file);
-                img.onload = () => {
-                    const escala = Math.min(1, 480 / Math.max(img.width, img.height));
-                    const c = document.createElement('canvas');
-                    c.width = Math.round(img.width * escala);
-                    c.height = Math.round(img.height * escala);
-                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-                    URL.revokeObjectURL(url);
-                    resolve(c.toDataURL('image/webp', 0.8));
-                };
-                img.src = url;
-            });
-        }
 
-        async function alterarFoto(input, id, doModal = false) {
-            if (input.files && input.files[0]) {
-                const dataUrl = await comprimirFoto(input.files[0]);
-                await sb.from('alunos').update({ foto_url: dataUrl }).eq('id', id);
-                const aluno = alunos.find(a => a.id === id);
-                if (aluno) aluno.foto_url = dataUrl;
-                if (doModal) abrirModalAluno(id);
-                renderTabela();
-                renderRelatorios();
-            }
+    async function renomearTurma() {
+        const novo = await promptSite('Renomear turma', `Novo nome para "${turmaAtiva}":`, turmaAtiva);
+        if (novo && novo.trim() !== "") {
+            const nomeLimpo = novo.trim();
+            await sb.from('alunos').update({ turma: nomeLimpo }).eq('turma', turmaAtiva);
+            await carregar(nomeLimpo);
         }
-
-        async function renomearTurma() {
-    const novo = await promptSite('Renomear turma', `Novo nome para "${turmaAtiva}":`, turmaAtiva);
-    if (novo && novo.trim() !== "") {
-        const nomeLimpo = novo.trim();
-        await sb.from('alunos').update({ turma: nomeLimpo }).eq('turma', turmaAtiva);
-        await carregar(nomeLimpo);
     }
-}
 
-async function excluirTurma() {
-    const ok = await confirmarSite('Excluir turma?', `A turma "${turmaAtiva}" e todos os seus alunos serão removidos. Essa ação não pode ser desfeita.`);
-    if (!ok) return;
-    const ids = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
-    if (ids.length) {
-        const r1 = await sb.from('relatorios').delete().in('aluno_id', ids);
+    async function excluirTurma() {
+        const ok = await confirmarSite('Excluir turma?', `A turma "${turmaAtiva}" e todos os seus alunos serão removidos. Essa ação não pode ser desfeita.`);
+        if (!ok) return;
+        const ids = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
+        if (ids.length) {
+            const r1 = await sb.from('relatorios').delete().in('aluno_id', ids);
+            if (r1.error) return mostrarToast('Não foi possível excluir: ' + r1.error.message);
+        }
+        const r2 = await sb.from('alunos').delete().eq('turma', turmaAtiva).select();
+        if (r2.error) return mostrarToast('Não foi possível excluir: ' + r2.error.message);
+        if (ids.length && (!r2.data || r2.data.length === 0)) return mostrarToast('O banco não permitiu excluir a turma (permissão).');
+        ids.forEach(i => delete relatoriosSalvosMap[i]);
+        turmaAtiva = "";
+        await carregar();
+        mostrarToast('Turma excluída.');
+    }
+
+    async function remover(id) {
+        const a = alunos.find(al => al.id === id);
+        const ok = await confirmarSite('Excluir aluno?', `${a ? a.nome : 'Este aluno'} será removido da turma. Essa ação não pode ser desfeita.`);
+        if (!ok) return;
+        const r1 = await sb.from('relatorios').delete().eq('aluno_id', id);
         if (r1.error) return mostrarToast('Não foi possível excluir: ' + r1.error.message);
+        const r2 = await sb.from('alunos').delete().eq('id', id).select();
+        if (r2.error) return mostrarToast('Não foi possível excluir: ' + r2.error.message);
+        if (!r2.data || r2.data.length === 0) return mostrarToast('O banco não permitiu excluir este aluno (permissão).');
+        delete relatoriosSalvosMap[id];
+        await carregar(turmaAtiva);
+        mostrarToast('Aluno excluído.');
     }
-    const r2 = await sb.from('alunos').delete().eq('turma', turmaAtiva).select();
-    if (r2.error) return mostrarToast('Não foi possível excluir: ' + r2.error.message);
-    if (ids.length && (!r2.data || r2.data.length === 0)) return mostrarToast('O banco não permitiu excluir a turma (permissão).');
-    ids.forEach(i => delete relatoriosSalvosMap[i]);
-    turmaAtiva = "";
-    await carregar();
-    mostrarToast('Turma excluída.');
-}
 
-async function remover(id) {
-    const a = alunos.find(al => al.id === id);
-    const ok = await confirmarSite('Excluir aluno?', `${a ? a.nome : 'Este aluno'} será removido da turma. Essa ação não pode ser desfeita.`);
-    if (!ok) return;
-    const r1 = await sb.from('relatorios').delete().eq('aluno_id', id);
-    if (r1.error) return mostrarToast('Não foi possível excluir: ' + r1.error.message);
-    const r2 = await sb.from('alunos').delete().eq('id', id).select();
-    if (r2.error) return mostrarToast('Não foi possível excluir: ' + r2.error.message);
-    if (!r2.data || r2.data.length === 0) return mostrarToast('O banco não permitiu excluir este aluno (permissão).');
-    delete relatoriosSalvosMap[id];
-    await carregar(turmaAtiva);
-    mostrarToast('Aluno excluído.');
-}
-        function renderTabs() {
-    const container = document.getElementById('abasContainer');
-    const acoes = document.getElementById('acoesTurma');
-    const turmas = [...new Set(alunos.map(a => a.turma))].sort();
-    if (turmas.length > 0) {
-        acoes.classList.remove('hidden');
-        container.innerHTML = turmas.map(t => `<button role="tab" aria-selected="${turmaAtiva === t}" onclick="turmaAtiva='${t}'; renderTabs(); renderTabela(); renderRelatorios();" class="aba ${turmaAtiva === t ? 'aba-ativa' : ''}">${t}</button>`).join('');
-    } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
-}
-
-        let configRapida = false;
-
-function alternarConfigRapida() {
-    configRapida = !configRapida;
-    const b = document.getElementById('btnConfig');
-    b.classList.toggle('aba-ativa', configRapida);
-    b.setAttribute('aria-pressed', String(configRapida));
-    renderTabela();
-}
-
-async function trocarPerfilRapido(id, campo, valor) {
-    const a = alunos.find(al => al.id === id);
-    if (!a) return;
-    a[campo] = valor || null;
-    await sb.from('alunos').update({ [campo]: valor || null }).eq('id', id);
-    if (perfisCompletos(a)) {
-        await gerarIndividual(id, false);
-        mostrarToast(`Relatório de ${a.nome.split(' ')[0]} gerado.`);
+    function renderTabs() {
+        const container = document.getElementById('abasContainer');
+        const acoes = document.getElementById('acoesTurma');
+        const turmas = [...new Set(alunos.map(a => a.turma))].sort();
+        if (turmas.length > 0) {
+            acoes.classList.remove('hidden');
+            container.innerHTML = turmas.map(t => `<button role="tab" aria-selected="${turmaAtiva === t}" onclick="turmaAtiva='${t}'; renderTabs(); renderTabela(); renderRelatorios();" class="aba ${turmaAtiva === t ? 'aba-ativa' : ''}">${t}</button>`).join('');
+        } else { acoes.classList.add('hidden'); container.innerHTML = ""; }
     }
-}
 
-function renderTabela() {
-    const tbody = document.getElementById('tabelaAlunos');
-    const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
+    let configRapida = false;
+
+    function alternarConfigRapida() {
+        configRapida = !configRapida;
+        const b = document.getElementById('btnConfig');
+        b.classList.toggle('aba-ativa', configRapida);
+        b.setAttribute('aria-pressed', String(configRapida));
+        renderTabela();
+    }
+
+    async function trocarPerfilRapido(id, campo, valor) {
+        const a = alunos.find(al => al.id === id);
+        if (!a) return;
+        a[campo] = valor || null;
+        await sb.from('alunos').update({ [campo]: valor || null }).eq('id', id);
+        if (perfisCompletos(a)) {
+            await gerarIndividual(id, false);
+            mostrarToast(`Relatório de ${a.nome.split(' ')[0]} gerado.`);
+        }
+    }
+
+    function renderTabela() {
+        const tbody = document.getElementById('tabelaAlunos');
+        const filtrados = alunos.filter(a => a.turma === turmaAtiva).sort((a,b) => a.nome.localeCompare(b.nome));
         if (carregando) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Carregando alunos...</p>`; return; }
-    if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Use a aba Cadastrar.</p>`; return; }
-    tbody.innerHTML = filtrados.map(a => `
-        <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
-            <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" loading="lazy" onclick="abrirModalAluno('${a.id}')" class="foto-preview">
-            <img src="${a.genero === 'fem' ? ICONE_FEM : ICONE_MASC}" alt="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" title="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" width="16" height="16" class="w-4 h-4 flex-shrink-0">
-            <button onclick="abrirModalAluno('${a.id}')" class="flex-1 min-w-[120px] text-left font-semibold text-base hover:underline">${a.nome}</button>
-            ${configRapida ? `
-            <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                <div class="w-full md:w-56">
-                    <select class="field field-sm" aria-label="Perfil pedagógico de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil', this.value)">${opcoesPerfil(PERFIS_PED, a.perfil, 'Pedagógico...')}</select>
+        if (filtrados.length === 0) { tbody.innerHTML = `<p class="p-10 text-center" style="color:var(--muted)">Nenhum aluno nesta turma. Use a aba Cadastrar.</p>`; return; }
+        tbody.innerHTML = filtrados.map(a => `
+            <div class="p-4 flex flex-wrap items-center gap-3 hover:bg-gray-50 transition-colors" style="border-color:var(--line)">
+                <img src="${a.foto_url || SEM_FOTO}" alt="Foto de ${a.nome}" loading="lazy" onclick="abrirModalAluno('${a.id}')" class="foto-preview">
+                <img src="${a.genero === 'fem' ? ICONE_FEM : ICONE_MASC}" alt="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" title="${a.genero === 'fem' ? 'Feminino' : 'Masculino'}" width="16" height="16" class="w-4 h-4 flex-shrink-0">
+                <button onclick="abrirModalAluno('${a.id}')" class="flex-1 min-w-[120px] text-left font-semibold text-base hover:underline">${a.nome}</button>
+                ${configRapida ? `
+                <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                    <div class="w-full md:w-56">
+                        <select class="field field-sm" aria-label="Perfil pedagógico de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil', this.value)">${opcoesPerfil(PERFIS_PED, a.perfil, 'Pedagógico...')}</select>
+                    </div>
+                    <div class="w-full md:w-56">
+                        <select class="field field-sm" aria-label="Perfil comportamental e emocional de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil_comp', this.value)">${opcoesPerfil(PERFIS_COMP, a.perfil_comp, 'Comportamental...')}</select>
+                    </div>
+                </div>` : ''}
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="irParaRelatorio('${a.id}')" class="btn btn-ghost btn-sm !px-3" aria-label="Ver relatório de ${a.nome}" title="Ver relatório">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
+                    </button>
+                    <button onclick="gerarIndividual('${a.id}')" class="btn btn-primary btn-sm">Gerar</button>
+                    <button onclick="remover('${a.id}')" class="btn btn-danger btn-sm" aria-label="Excluir ${a.nome}">Excluir</button>
                 </div>
-                <div class="w-full md:w-56">
-                    <select class="field field-sm" aria-label="Perfil comportamental e emocional de ${a.nome}" onchange="trocarPerfilRapido('${a.id}', 'perfil_comp', this.value)">${opcoesPerfil(PERFIS_COMP, a.perfil_comp, 'Comportamental...')}</select>
-                </div>
-            </div>` : ''}
-            <div class="flex gap-2 ml-auto">
-                <button onclick="irParaRelatorio('${a.id}')" class="btn btn-ghost btn-sm !px-3" aria-label="Ver relatório de ${a.nome}" title="Ver relatório">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>
-                </button>
-                <button onclick="gerarIndividual('${a.id}')" class="btn btn-primary btn-sm">Gerar</button>
-                <button onclick="remover('${a.id}')" class="btn btn-danger btn-sm" aria-label="Excluir ${a.nome}">Excluir</button>
             </div>
-        </div>
-    `).join('');
-}
+        `).join('');
+    }
 
-        // ===== RELATÓRIO NO MODELO DA COORDENAÇÃO =====
-// Atualize estes 4 valores a cada bimestre:
-const REL_BIMESTRE = '3º', REL_ANO = '2026', REL_DATA = 'OUTUBRO DE 2026', REL_PROFESSOR = 'Sergio Leonardo (Mr. Léo)';
+    // ===== RELATÓRIO NO MODELO DA COORDENAÇÃO =====
+    // Atualize estes 4 valores a cada bimestre:
+    const REL_BIMESTRE = '3º', REL_ANO = '2026', REL_DATA = 'OUTUBRO DE 2026', REL_PROFESSOR = 'Sergio Leonardo (Mr. Léo)';
 
-// "@" vira o/a conforme o gênero e {n} vira o primeiro nome
-// Perfis pedagógicos usam p1, p2 e o. Perfis comportamentais usam c1, c2 e c3.
-const BANCO = {
-    participativo: {
-        p1: ["{n} demonstra boa coordenação motora e executa com segurança os movimentos propostos nas aulas.", "Nas atividades práticas, {n} mostra domínio crescente dos fundamentos esportivos trabalhados no bimestre.", "{n} apresenta ótimo desempenho nas atividades motoras, com agilidade, equilíbrio e boa noção de espaço."],
-        p2: ["Compreende rapidamente as orientações e aplica o que aprende em jogos e circuitos.", "Evoluiu na execução dos fundamentos e já resolve situações de jogo com autonomia.", "Assimila novos movimentos com facilidade e se supera a cada desafio proposto."],
-        o: ["Seguiremos estimulando seu protagonismo, propondo desafios que ampliem suas habilidades no próximo bimestre.", "Para o próximo bimestre, a sugestão é manter a constância e explorar novas modalidades.", "Recomenda-se que {n} continue sendo incentivad@ a assumir papéis de liderança nos jogos coletivos."]
-    },
-    pouco_participativo: {
-        p1: ["{n} executa os movimentos com cuidado e, aos poucos, ganha segurança na coordenação motora.", "Nas aulas práticas, {n} se mostra atent@ e vem avançando no domínio dos fundamentos trabalhados.", "{n} realiza as atividades em seu próprio ritmo, com evolução gradual na execução dos movimentos."],
-        p2: ["Tem se beneficiado de demonstrações e de atividades em pequenos grupos, ampliando seu repertório motor.", "Compreende as orientações e, com incentivo, fica cada vez mais dispost@ a experimentar movimentos novos.", "Apresenta progresso nos jogos em dupla e em trios, onde se sente mais à vontade para atuar."],
-        o: ["Continuaremos valorizando seu ritmo e propondo atividades que fortaleçam sua confiança no próximo bimestre.", "A parceria com a família será muito importante para incentivar {n} a participar com ainda mais segurança.", "No próximo bimestre, vamos estimular pequenas conquistas e convidar {n} a participar de novos jogos, sempre com acolhimento."]
-    },
-    agitado: {
-        p1: ["{n} possui muita energia e vem direcionando-a para aprimorar a precisão dos movimentos nas aulas.", "Nas atividades práticas, {n} se destaca pela velocidade e pelo entusiasmo, e vem desenvolvendo ainda mais o controle motor.", "{n} demonstra disposição e agilidade, aprimorando a cada aula a coordenação e a atenção aos detalhes."],
-        p2: ["Tem evoluído na execução dos fundamentos, principalmente quando as orientações são claras e objetivas.", "Aprende com rapidez e está desenvolvendo a calma necessária para executar os movimentos com cada vez mais técnica.", "Rende muito bem em atividades com metas curtas e desafios que estimulam a concentração."],
-        o: ["Seguiremos canalizando sua energia para funções de responsabilidade, como ajudar na organização das atividades.", "No próximo bimestre, manteremos combinados claros e valorizaremos cada avanço de {n}.", "A parceria com a família favorece ainda mais o desenvolvimento do foco e da autonomia de {n}."]
-    },
-    melhorar: {
-        p1: ["{n} vem se dedicando para aprimorar sua coordenação motora e demonstra esforço nas atividades propostas.", "Nas aulas práticas, {n} progride a cada aula com a repetição dos movimentos e o apoio do professor.", "{n} está em fase de desenvolvimento das habilidades motoras básicas e mostra interesse em evoluir."],
-        p2: ["Apresenta avanços quando as atividades são divididas em etapas e recebe demonstrações individuais.", "Equilíbrio, lateralidade e noção de ritmo são habilidades que seguem em desenvolvimento, com evolução a cada aula.", "Com atividades de reforço e constância, tende a ampliar ainda mais sua segurança nos fundamentos esportivos."],
-        o: ["Com o apoio da família e a continuidade das atividades, esperamos avanços importantes no próximo bimestre.", "No próximo bimestre, sugerimos incentivar a prática de atividades físicas também fora da escola, de forma lúdica.", "Seguiremos valorizando cada conquista de {n} e ajustando as atividades ao seu ritmo de aprendizagem."]
-    },
-    lider: {
-        c1: ["Assume naturalmente a liderança nas atividades em grupo e organiza os colegas com respeito.", "Costuma ser escolhid@ pelos colegas para liderar equipes e conduz os jogos com atenção a todos.", "Toma a iniciativa nas atividades coletivas e motiva o grupo a participar."],
-        c2: ["Cumpre os combinados com exemplo e ajuda a lembrar as regras da turma.", "Demonstra autonomia e senso de responsabilidade ao auxiliar na organização das aulas.", "Acompanha as orientações com atenção e é referência de postura para os colegas."],
-        c3: ["Mantém a calma em situações de disputa e incentiva os colegas após erros e derrotas.", "Expressa suas emoções com equilíbrio e acolhe quem precisa de apoio.", "Vem desenvolvendo ainda mais a escuta das ideias dos colegas, o que fortalece sua liderança."]
-    },
-    competitivo: {
-        c1: ["Participa com grande empenho de todas as atividades e busca sempre dar o seu melhor nos jogos.", "Gosta de desafios e se envolve com muita energia nas atividades que envolvem disputa.", "Interage bem com o grupo e vem descobrindo que o jogo também é uma oportunidade de cooperação."],
-        c2: ["Respeita as regras e vem aprendendo a valorizar também o processo, não só o resultado.", "Tem evoluído no cumprimento dos combinados, especialmente durante as competições.", "Responde muito bem a metas claras e aos combinados definidos antes dos jogos."],
-        c3: ["Vem desenvolvendo a habilidade de lidar com a derrota e de reconhecer o esforço dos adversários.", "Demonstra grande vontade de vencer e, com o diálogo e exemplos, aprende a transformar cada jogo em aprendizado.", "Tem lidado cada vez melhor com as disputas e comemorado também as conquistas da equipe."]
-    },
+    // "@" vira o/a conforme o gênero e {n} vira o primeiro nome
+    // Perfis pedagógicos usam p1, p2 e o. Perfis comportamentais usam c1, c2 e c3.
+    const BANCO = {
+        participativo: {
+            p1: ["{n} demonstra boa coordenação motora e executa com segurança os movimentos propostos nas aulas.", "Nas atividades práticas, {n} mostra domínio crescente dos fundamentos esportivos trabalhados no bimestre.", "{n} apresenta ótimo desempenho nas atividades motoras, com agilidade, equilíbrio e boa noção de espaço."],
+            p2: ["Compreende rapidamente as orientações e aplica o que aprende em jogos e circuitos.", "Evoluiu na execução dos fundamentos e já resolve situações de jogo com autonomia.", "Assimila novos movimentos com facilidade e se supera a cada desafio proposto."],
+            o: ["Seguiremos estimulando seu protagonismo, propondo desafios que ampliem suas habilidades no próximo bimestre.", "Para o próximo bimestre, a sugestão é manter a constância e explorar novas modalidades.", "Recomenda-se que {n} continue sendo incentivad@ a assumir papéis de liderança nos jogos coletivos."]
+        },
+        pouco_participativo: {
+            p1: ["{n} executa os movimentos com cuidado e, aos poucos, ganha segurança na coordenação motora.", "Nas aulas práticas, {n} se mostra atent@ e vem avançando no domínio dos fundamentos trabalhados.", "{n} realiza as atividades em seu próprio ritmo, com evolução gradual na execução dos movimentos."],
+            p2: ["Tem se beneficiado de demonstrações e de atividades em pequenos grupos, ampliando seu repertório motor.", "Compreende as orientações e, com incentivo, fica cada vez mais dispost@ a experimentar movimentos novos.", "Apresenta progresso nos jogos em dupla e em trios, onde se sente mais à vontade para atuar."],
+            o: ["Continuaremos valorizando seu ritmo e propondo atividades que fortaleçam sua confiança no próximo bimestre.", "A parceria com a família será muito importante para incentivar {n} a participar com ainda mais segurança.", "No próximo bimestre, vamos estimular pequenas conquistas e convidar {n} a participar de novos jogos, sempre com acolhimento."]
+        },
+        agitado: {
+            p1: ["{n} possui muita energia e vem direcionando-a para aprimorar a precisão dos movimentos nas aulas.", "Nas atividades práticas, {n} se destaca pela velocidade e pelo entusiasmo, e vem desenvolvendo ainda mais o controle motor.", "{n} demonstra disposição e agilidade, aprimorando a cada aula a coordenação e a atenção aos detalhes."],
+            p2: ["Tem evoluído na execução dos fundamentos, principalmente quando as orientações são claras e objetivas.", "Aprende com rapidez e está desenvolvendo a calma necessária para executar os movimentos com cada vez mais técnica.", "Rende muito bem em atividades com metas curtas e desafios que estimulam a concentração."],
+            o: ["Seguiremos canalizando sua energia para funções de responsabilidade, como ajudar na organização das atividades.", "No próximo bimestre, manteremos combinados claros e valorizaremos cada avanço de {n}.", "A parceria com a família favorece ainda mais o desenvolvimento do foco e da autonomia de {n}."]
+        },
+        melhorar: {
+            p1: ["{n} vem se dedicando para aprimorar sua coordenação motora e demonstra esforço nas atividades propostas.", "Nas aulas práticas, {n} progride a cada aula com a repetição dos movimentos e o apoio do professor.", "{n} está em fase de desenvolvimento das habilidades motoras básicas e mostra interesse em evoluir."],
+            p2: ["Apresenta avanços quando as atividades são divididas em etapas e recebe demonstrações individuais.", "Equilíbrio, lateralidade e noção de ritmo são habilidades que seguem em desenvolvimento, com evolução a cada aula.", "Com atividades de reforço e constância, tende a ampliar ainda mais sua segurança nos fundamentos esportivos."],
+            o: ["Com o apoio da família e a continuidade das atividades, esperamos avanços importantes no próximo bimestre.", "No próximo bimestre, sugerimos incentivar a prática de atividades físicas também fora da escola, de forma lúdica.", "Seguiremos valorizando cada conquista de {n} e ajustando as atividades ao seu ritmo de aprendizagem."]
+        },
+        lider: {
+            c1: ["Assume naturalmente a liderança nas atividades em grupo e organiza os colegas com respeito.", "Costuma ser escolhid@ pelos colegas para liderar equipes e conduz os jogos com atenção a todos.", "Toma a iniciativa nas atividades coletivas e motiva o grupo a participar."],
+            c2: ["Cumpre os combinados com exemplo e ajuda a lembrar as regras da turma.", "Demonstra autonomia e senso de responsabilidade ao auxiliar na organização das aulas.", "Acompanha as orientações com atenção e é referência de postura para os colegas."],
+            c3: ["Mantém a calma em situações de disputa e incentiva os colegas após erros e derrotas.", "Expressa suas emoções com equilíbrio e acolhe quem precisa de apoio.", "Vem desenvolvendo ainda mais a escuta das ideias dos colegas, o que fortalece sua liderança."]
+        },
+        competitivo: {
+            c1: ["Participa com grande empenho de todas as atividades e busca sempre dar o seu melhor nos jogos.", "Gosta de desafios e se envolve com muita energia nas atividades que envolvem disputa.", "Interage bem com o grupo e vem descobrindo que o jogo também é uma oportunidade de cooperação."],
+            c2: ["Respeita as regras e vem aprendendo a valorizar também o processo, não só o resultado.", "Tem evoluído no cumprimento dos combinados, especialmente durante as competições.", "Responde muito bem a metas claras e aos combinados definidos antes dos jogos."],
+            c3: ["Vem desenvolvendo a habilidade de lidar com a derrota e de reconhecer o esforço dos adversários.", "Demonstra grande vontade de vencer e, com o diálogo e exemplos, aprende a transformar cada jogo em aprendizado.", "Tem lidado cada vez melhor com as disputas e comemorado também as conquistas da equipe."]
+        },
         ansioso: {
-        c1: ["Participa das atividades com dedicação e capricho, e vem se soltando cada vez mais com o incentivo do professor.", "Nas atividades em grupo, valoriza o apoio dos colegas e do professor, o que mostra seu cuidado em fazer bem feito.", "Vem ganhando confiança para interagir, principalmente quando as atividades são explicadas passo a passo."],
-        c2: ["Cumpre os combinados com dedicação e valoriza as orientações para se sentir segur@.", "Demonstra cuidado com o material e com as regras e vem se adaptando bem às novidades.", "Tem ampliado sua autonomia com orientações claras e previsíveis."],
-        c3: ["Diante de desafios novos, vem ganhando segurança com acolhimento e incentivo.", "Está aprendendo a enxergar o erro como parte do aprendizado, o que fortalece sua confiança.", "Tem expressado cada vez melhor o que sente e pedido ajuda quando necessário."]
-    },
-    disperso: {
-        c1: ["Participa das atividades e vem desenvolvendo a concentração, com bons resultados quando recebe lembretes carinhosos.", "Interage bem com os colegas e mostra evolução na atenção durante as explicações.", "Rende muito bem quando está próxim@ ao professor e recebe tarefas com objetivos curtos."],
-        c2: ["Tem avançado no cumprimento dos combinados, com apoio para iniciar e concluir as tarefas.", "Acompanha as regras dos jogos com orientações objetivas e vem ganhando autonomia.", "Demonstra boa vontade e responde muito bem quando é reconhecid@ pelos esforços."],
-        c3: ["Tem se mostrado tranquil@ e receptiv@ às orientações, com avanços na concentração.", "Se anima com o incentivo constante e vem acompanhando o ritmo do grupo com mais facilidade.", "Expressa suas emoções com espontaneidade e vem aprendendo a esperar a sua vez."]
-    },
-    convivencia: {
-        c1: ["Está aprendendo a conviver nas atividades coletivas, com avanços importantes ao longo do bimestre.", "Vem desenvolvendo a partilha de espaços e materiais com os colegas, com apoio e mediação do professor.", "Tem buscado a aproximação dos colegas e participa muito bem quando duplas e grupos são organizados pelo professor."],
-        c2: ["Vem fortalecendo os combinados de convivência, como respeitar a vez e o espaço do outro.", "Tem melhorado o cumprimento das regras quando recebe orientação individual.", "Demonstra boa vontade em reparar atitudes e pedir desculpas quando necessário."],
-        c3: ["Tem expressado suas emoções com mais cuidado, usando o diálogo antes de reagir.", "Vem aprendendo estratégias para se acalmar em situações de conflito, com bons resultados.", "Reage bem ao diálogo e ao reconhecimento das atitudes positivas."]
-    },
-    esperado: {
-        c1: ["Participa das atividades de forma tranquila e adequada, relacionando-se bem com os colegas e com o professor.", "Convive de maneira respeitosa com o grupo e participa das propostas conforme o esperado para o bimestre.", "Integra-se bem às atividades em grupo e colabora para um bom ambiente nas aulas."],
-        c2: ["Cumpre os combinados e respeita as regras, demonstrando responsabilidade com o material e com a turma.", "Acompanha as orientações do professor com atenção e mantém uma postura adequada durante as aulas.", "Demonstra autonomia compatível com a faixa etária e segue os combinados com naturalidade."],
-        c3: ["Expressa suas emoções de maneira equilibrada e lida bem com as situações de jogo.", "Demonstra equilíbrio diante de vitórias e derrotas e se relaciona bem com os colegas.", "Mostra-se confiante e à vontade para participar e pedir ajuda quando precisa."]
+            c1: ["Participa das atividades com dedicação e capricho, e vem se soltando cada vez mais com o incentivo do professor.", "Nas atividades em grupo, valoriza o apoio dos colegas e do professor, o que mostra seu cuidado em fazer bem feito.", "Vem ganhando confiança para interagir, principalmente quando as atividades são explicadas passo a passo."],
+            c2: ["Cumpre os combinados com dedicação e valoriza as orientações para se sentir segur@.", "Demonstra cuidado com o material e com as regras e vem se adaptando bem às novidades.", "Tem ampliado sua autonomia com orientações claras e previsíveis."],
+            c3: ["Diante de desafios novos, vem ganhando segurança com acolhimento e incentivo.", "Está aprendendo a enxergar o erro como parte do aprendizado, o que fortalece sua confiança.", "Tem expressado cada vez melhor o que sente e pedido ajuda quando necessário."]
+        },
+        disperso: {
+            c1: ["Participa das atividades e vem desenvolvendo a concentração, com bons resultados quando recebe lembretes carinhosos.", "Interage bem com os colegas e mostra evolução na atenção durante as explicações.", "Rende muito bem quando está próxim@ ao professor e recebe tarefas com objetivos curtos."],
+            c2: ["Tem avançado no cumprimento dos combinados, com apoio para iniciar e concluir as tarefas.", "Acompanha as regras dos jogos com orientações objetivas e vem ganhando autonomia.", "Demonstra boa vontade e responde muito bem quando é reconhecid@ pelos esforços."],
+            c3: ["Tem se mostrado tranquil@ e receptiv@ às orientações, com avanços na concentração.", "Se anima com o incentivo constante e vem acompanhando o ritmo do grupo com mais facilidade.", "Expressa suas emoções com espontaneidade e vem aprendendo a esperar a sua vez."]
+        },
+        convivencia: {
+            c1: ["Está aprendendo a conviver nas atividades coletivas, com avanços importantes ao longo do bimestre.", "Vem desenvolvendo a partilha de espaços e materiais com os colegas, com apoio e mediação do professor.", "Tem buscado a aproximação dos colegas e participa muito bem quando duplas e grupos são organizados pelo professor."],
+            c2: ["Vem fortalecendo os combinados de convivência, como respeitar a vez e o espaço do outro.", "Tem melhorado o cumprimento das regras quando recebe orientação individual.", "Demonstra boa vontade em reparar atitudes e pedir desculpas quando necessário."],
+            c3: ["Tem expressado suas emoções com mais cuidado, usando o diálogo antes de reagir.", "Vem aprendendo estratégias para se acalmar em situações de conflito, com bons resultados.", "Reage bem ao diálogo e ao reconhecimento das atitudes positivas."]
+        },
+        esperado: {
+            c1: ["Participa das atividades de forma tranquila e adequada, relacionando-se bem com os colegas e com o professor.", "Convive de maneira respeitosa com o grupo e participa das propostas conforme o esperado para o bimestre.", "Integra-se bem às atividades em grupo e colabora para um bom ambiente nas aulas."],
+            c2: ["Cumpre os combinados e respeita as regras, demonstrando responsabilidade com o material e com a turma.", "Acompanha as orientações do professor com atenção e mantém uma postura adequada durante as aulas.", "Demonstra autonomia compatível com a faixa etária e segue os combinados com naturalidade."],
+            c3: ["Expressa suas emoções de maneira equilibrada e lida bem com as situações de jogo.", "Demonstra equilíbrio diante de vitórias e derrotas e se relaciona bem com os colegas.", "Mostra-se confiante e à vontade para participar e pedir ajuda quando precisa."]
+        }
+    };
+
+    const PERFIS_PED = { participativo: 'Participativo', pouco_participativo: 'Pouco participativo', agitado: 'Agitado', melhorar: 'Melhorar' };
+    const PERFIS_COMP = { lider: 'Líder', competitivo: 'Competitivo(a)', ansioso: 'Ansioso(a)', disperso: 'Disperso(a)', convivencia: 'Em desenvolvimento nas relações', esperado: 'Dentro do esperado' };
+
+    function opcoesPerfil(lista, atual, vazio = 'Selecione...') {
+        return `<option value="" ${!lista[atual] ? 'selected' : ''}>${vazio}</option>` +
+            Object.entries(lista).map(([v, n]) => `<option value="${v}" ${v === atual ? 'selected' : ''}>${n}</option>`).join('');
     }
-};
+    function perfisCompletos(a) { return !!(a && PERFIS_PED[a.perfil] && PERFIS_COMP[a.perfil_comp]); }
 
-const PERFIS_PED = { participativo: 'Participativo', pouco_participativo: 'Pouco participativo', agitado: 'Agitado', melhorar: 'Melhorar' };
-const PERFIS_COMP = { lider: 'Líder', competitivo: 'Competitivo(a)', ansioso: 'Ansioso(a)', disperso: 'Disperso(a)', convivencia: 'Em desenvolvimento nas relações', esperado: 'Dentro do esperado' };
+    document.getElementById('perfilInd').innerHTML = opcoesPerfil(PERFIS_PED, '');
+    document.getElementById('perfilCompInd').innerHTML = opcoesPerfil(PERFIS_COMP, '');
 
-function opcoesPerfil(lista, atual, vazio = 'Selecione...') {
-    return `<option value="" ${!lista[atual] ? 'selected' : ''}>${vazio}</option>` +
-        Object.entries(lista).map(([v, n]) => `<option value="${v}" ${v === atual ? 'selected' : ''}>${n}</option>`).join('');
-}
-function perfisCompletos(a) { return !!(a && PERFIS_PED[a.perfil] && PERFIS_COMP[a.perfil_comp]); }
-
-document.getElementById('perfilInd').innerHTML = opcoesPerfil(PERFIS_PED, '');
-document.getElementById('perfilCompInd').innerHTML = opcoesPerfil(PERFIS_COMP, '');
-
-async function trocarPerfil(id, campo, valor) {
-    await atualizarDado(id, campo, valor || null);
-    const a = alunos.find(al => al.id === id);
-    if (perfisCompletos(a)) {
-        await gerarIndividual(id, false);
-        mostrarToast(`Relatório de ${a.nome.split(' ')[0]} gerado.`);
-    } else {
-        mostrarToast('Escolha também o outro perfil para gerar o relatório.');
-    }
-    abrirModalAluno(id);
-}
-function lerRel(txt) {
-    try { const o = JSON.parse(txt); if (o && o.p) return o; } catch (e) {}
-    return { p: txt || '', c: '', o: '' };
-}
-function juntarRel(txt, sep = '\n\n') {
-    const r = lerRel(txt);
-    return [r.p, r.c, r.o].filter(Boolean).join(sep);
-}
-
-function montarRelatorio(a) {
-    const ped = BANCO[a.perfil];        // parágrafo pedagógico + observações
-    const comp = BANCO[a.perfil_comp];  // parágrafo comportamental e emocional
-    const nome = a.nome.trim().split(/\s+/)[0];
-    const fem = a.genero === 'fem';
-    const pick = arr => Math.floor(Math.random() * arr.length);
-    const ordens = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
-    const usados = new Set(alunos
-        .filter(x => x.turma === a.turma && x.id !== a.id && relatoriosSalvosMap[x.id])
-        .map(x => lerRel(relatoriosSalvosMap[x.id]).kc));
-    let kc, ic;
-    for (let t = 0; t < 80; t++) {
-        ic = [pick(ped.p1), pick(ped.p2), pick(ped.o), pick(comp.c1), pick(comp.c2), pick(comp.c3), Math.floor(Math.random() * 6)];
-        kc = a.perfil + '|' + a.perfil_comp + '|' + ic.join('-');
-        if (!usados.has(kc)) break;
-    }
-    const f = s => s.replace(/@/g, fem ? 'a' : 'o').replace(/\{n\}/g, nome);
-    const fr = [comp.c1[ic[3]], comp.c2[ic[4]], comp.c3[ic[5]]];
-    const c = ordens[ic[6]].map(i => fr[i]).join(' ');
-    return JSON.stringify({ kc, p: f(ped.p1[ic[0]] + ' ' + ped.p2[ic[1]]), c: f(c), o: f(ped.o[ic[2]]) });
-}
-
-async function gerarIndividual(id, rolar = true) {
-    const a = alunos.find(al => al.id === id);
-    if (!perfisCompletos(a)) {
-        mostrarToast('Escolha os dois perfis do aluno para gerar o relatório.');
+    async function trocarPerfil(id, campo, valor) {
+        await atualizarDado(id, campo, valor || null);
+        const a = alunos.find(al => al.id === id);
+        if (perfisCompletos(a)) {
+            await gerarIndividual(id, false);
+            mostrarToast(`Relatório de ${a.nome.split(' ')[0]} gerado.`);
+        } else {
+            mostrarToast('Escolha também o outro perfil para gerar o relatório.');
+        }
         abrirModalAluno(id);
-        return;
     }
-    const textoFinal = montarRelatorio(a);
-    // O texto entra no mapa antes de salvar, para a checagem de repetição da turma funcionar
-    relatoriosSalvosMap[id] = textoFinal;
-    await sb.from('relatorios').delete().eq('aluno_id', id);
-    const { error } = await sb.from('relatorios').insert({ aluno_id: id, texto_completo: textoFinal });
-    if (error) {
+
+    function lerRel(txt) {
+        try { const o = JSON.parse(txt); if (o && o.p) return o; } catch (e) {}
+        return { p: txt || '', c: '', o: '' };
+    }
+    function juntarRel(txt, sep = '\n\n') {
+        const r = lerRel(txt);
+        return [r.p, r.c, r.o].filter(Boolean).join(sep);
+    }
+
+    function montarRelatorio(a) {
+        const ped = BANCO[a.perfil];        // parágrafo pedagógico + observações
+        const comp = BANCO[a.perfil_comp];  // parágrafo comportamental e emocional
+        const nome = a.nome.trim().split(/\s+/)[0];
+        const fem = a.genero === 'fem';
+        const pick = arr => Math.floor(Math.random() * arr.length);
+        const ordens = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+        const usados = new Set(alunos
+            .filter(x => x.turma === a.turma && x.id !== a.id && relatoriosSalvosMap[x.id])
+            .map(x => lerRel(relatoriosSalvosMap[x.id]).kc));
+        let kc, ic;
+        for (let t = 0; t < 80; t++) {
+            ic = [pick(ped.p1), pick(ped.p2), pick(ped.o), pick(comp.c1), pick(comp.c2), pick(comp.c3), Math.floor(Math.random() * 6)];
+            kc = a.perfil + '|' + a.perfil_comp + '|' + ic.join('-');
+            if (!usados.has(kc)) break;
+        }
+        const f = s => s.replace(/@/g, fem ? 'a' : 'o').replace(/\{n\}/g, nome);
+        const fr = [comp.c1[ic[3]], comp.c2[ic[4]], comp.c3[ic[5]]];
+        const c = ordens[ic[6]].map(i => fr[i]).join(' ');
+        return JSON.stringify({ kc, p: f(ped.p1[ic[0]] + ' ' + ped.p2[ic[1]]), c: f(c), o: f(ped.o[ic[2]]) });
+    }
+
+    async function gerarIndividual(id, rolar = true) {
+        const a = alunos.find(al => al.id === id);
+        if (!perfisCompletos(a)) {
+            mostrarToast('Escolha os dois perfis do aluno para gerar o relatório.');
+            abrirModalAluno(id);
+            return;
+        }
+        const textoFinal = montarRelatorio(a);
+        // O texto entra no mapa antes de salvar, para a checagem de repetição da turma funcionar
+        relatoriosSalvosMap[id] = textoFinal;
+        await sb.from('relatorios').delete().eq('aluno_id', id);
+        const { error } = await sb.from('relatorios').insert({ aluno_id: id, texto_completo: textoFinal });
+        if (error) {
+            delete relatoriosSalvosMap[id];
+            renderRelatorios();
+            return mostrarToast('Não foi possível salvar o relatório: ' + error.message);
+        }
+        renderRelatorios();
+        if (rolar) rolarAte(id);
+    }
+
+    function paginaRel(a, r, dataImp) {
+        const fmt = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const itens = ['Língua Portuguesa', 'Matemática', 'Ciências Naturais', 'História / Geografia', 'Arte', 'Socioemocional', 'Ed. Física', 'Inglês', 'Música', 'Balé/ Judô'];
+        const topo = '<img class="timbrado" src="timbrado-relatorio.webp" alt="">';
+        return `<section class="folha">${topo}<div class="conteudo">
+            <p class="rt">RELATÓRIO INDIVIDUAL DE DESENVOLVIMENTO DO ESTUDANTE</p>
+            <p class="rt">Ensino Fundamental – Anos Iniciais | 1º ao 5º ano</p>
+            <p><b>Estudante:</b> ${fmt(a.nome)}</p>
+            <p class="rg" style="--c:101mm"><span><b>Turma:</b> ${fmt(a.turma)}</span><span><b>Ano letivo:</b> ${REL_ANO}</span></p>
+            <p class="rg" style="--c:92mm"><span><b>Bimestre:</b> ${REL_BIMESTRE}</span><span><b>Data: ${REL_DATA}</b></span></p>
+            <p class="rj"><b><u>Componente(s) Curricular(es)</u></b> (assinale qual (quais) o (s) seu(s) componente(s) curricular(es)</p>
+            ${itens.map(i => `<p class="ri">( ${i === 'Ed. Física' ? 'X' : '&nbsp;&nbsp;&nbsp;'} ) ${i}</p>`).join('')}
+            <p class="rh rh1">Desenvolvimento pedagógico:</p><p class="rx">${fmt(r.p)}</p>
+            <p class="rh">Desenvolvimento comportamental e emocional:</p><p class="rx">${fmt(r.c)}</p>
+            <p class="rh">OBSERVAÇÕES FINAIS (se necessário)</p><p class="rx rxo">${fmt(r.o)}</p>
+            <p class="rh">Professor(a) responsável pelo registro: <span style="font-weight:400">${fmt(REL_PROFESSOR)}</span></p>
+            <p class="rh">Data: <span style="font-weight:400">${dataImp}</span></p>
+        </div></section>`;
+    }
+
+    async function imprimirRelatorios() {
+        const lista = alunos
+            .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+            .sort((a, b) => a.nome.localeCompare(b.nome));
+        if (lista.length === 0) return mostrarToast('Não há relatórios para imprimir.');
+        const area = document.getElementById('folhaImpressao');
+        const dataImp = new Date().toLocaleDateString('pt-BR');
+        area.innerHTML = lista.map(a => paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp)).join('');
+        await Promise.all([...area.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
+        window.print();
+    }
+
+    function nomeArquivoSeguro(s) {
+        return String(s).replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim() || 'sem-nome';
+    }
+
+    async function baixarPDFs() {
+        const lista = alunos
+            .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+            .sort((a, b) => a.nome.localeCompare(b.nome));
+        if (lista.length === 0) return mostrarToast('Não há relatórios para baixar.');
+        if (!window.html2canvas || !window.jspdf || !window.JSZip) return mostrarToast('Bibliotecas ainda carregando. Tente de novo em instantes.');
+
+        const { jsPDF } = window.jspdf;
+        const btn = document.getElementById('btnPdf');
+        const area = document.getElementById('pdfRender');
+        const dataImp = new Date().toLocaleDateString('pt-BR');
+        const nomePasta = nomeArquivoSeguro(turmaAtiva);
+        const zip = new JSZip();
+        const pasta = zip.folder(nomePasta);
+        const usados = new Set();
+        btn.disabled = true;
+
+        try {
+            for (let i = 0; i < lista.length; i++) {
+                const a = lista[i];
+                btn.textContent = `Gerando ${i + 1}/${lista.length}...`;
+                area.innerHTML = paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp);
+                await Promise.all([...area.querySelectorAll('img')].map(im => im.decode().catch(() => {})));
+                const canvas = await html2canvas(area.querySelector('.folha'), { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
+                const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+                pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+
+                let nome = nomeArquivoSeguro(a.nome), n = 2;
+                while (usados.has(nome.toLowerCase())) nome = nomeArquivoSeguro(a.nome) + ' (' + n++ + ')';
+                usados.add(nome.toLowerCase());
+                pasta.file(nome + '.pdf', pdf.output('arraybuffer'));
+            }
+            btn.textContent = 'Compactando...';
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = nomePasta + '.zip';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+            mostrarToast(`${lista.length} PDF(s) baixados na pasta "${nomePasta}".`);
+        } catch (e) {
+            mostrarToast('Não foi possível gerar os PDFs: ' + (e.message || e));
+        } finally {
+            area.innerHTML = '';
+            btn.disabled = false;
+            btn.textContent = 'Baixar PDFs';
+        }
+    }
+
+    async function gerarTurmaToda() {
+        const turma = alunos.filter(a => a.turma === turmaAtiva);
+        const prontos = turma.filter(perfisCompletos);
+        const faltam = turma.length - prontos.length;
+        if (prontos.length === 0) return mostrarToast('Escolha os dois perfis de cada aluno para gerar.');
+        await Promise.all(prontos.map(a => gerarIndividual(a.id, false)));
+        if (faltam > 0) mostrarToast(`${faltam} aluno(s) ficaram sem relatório: faltam perfis.`);
+        const area = document.getElementById('resultadoArea');
+        if (area.classList.contains('hidden')) return;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            window.scrollTo({ top: area.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        }));
+    }
+
+    function renderRelatorios() {
+        const area = document.getElementById('resultadoArea');
+        const container = document.getElementById('listaRelatorios');
+
+        const filtrados = alunos
+            .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+            .sort((a, b) => a.nome.localeCompare(b.nome));
+
+        const html = filtrados.map(a => {
+            return `<article id="rel-${a.id}" class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 rounded-2xl border relative transition-shadow" style="background:var(--bg);border-color:var(--line)">
+                <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200" aria-label="Remover relatório de ${a.nome}">✕</button>
+                ${a.foto_url ? `<img src="${a.foto_url}" alt="Foto de ${a.nome}" loading="lazy" class="w-24 h-24 rounded-2xl object-cover bg-white flex-shrink-0">` : ''}
+                <div class="flex-1 text-center md:text-justify"><p class="font-display font-semibold">${a.nome.toUpperCase()} (${turmaAtiva})</p><p class="text-sm mt-1 leading-relaxed" style="color:#2d3748">${juntarRel(relatoriosSalvosMap[a.id], '<br><br>')}</p></div></article>`;
+        }).join('');
+
+        if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
+    }
+
+    async function removerRelatorio(id) {
+        const a = alunos.find(al => al.id === id);
+        const ok = await confirmarSite('Excluir relatório?', `O relatório de ${a ? a.nome : 'este aluno'} será apagado. Você pode gerar outro depois.`);
+        if (!ok) return;
+        await sb.from('relatorios').delete().eq('aluno_id', id);
         delete relatoriosSalvosMap[id];
         renderRelatorios();
-        return mostrarToast('Não foi possível salvar o relatório: ' + error.message);
     }
-    renderRelatorios();
-    if (rolar) rolarAte(id);
-}
 
-function paginaRel(a, r, dataImp) {
-    const fmt = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    const itens = ['Língua Portuguesa', 'Matemática', 'Ciências Naturais', 'História / Geografia', 'Arte', 'Socioemocional', 'Ed. Física', 'Inglês', 'Música', 'Balé/ Judô'];
-    const topo = '<img class="timbrado" src="timbrado-relatorio.webp" alt="">';
-    return `<section class="folha">${topo}<div class="conteudo">
-        <p class="rt">RELATÓRIO INDIVIDUAL DE DESENVOLVIMENTO DO ESTUDANTE</p>
-        <p class="rt">Ensino Fundamental – Anos Iniciais | 1º ao 5º ano</p>
-        <p><b>Estudante:</b> ${fmt(a.nome)}</p>
-        <p class="rg" style="--c:101mm"><span><b>Turma:</b> ${fmt(a.turma)}</span><span><b>Ano letivo:</b> ${REL_ANO}</span></p>
-        <p class="rg" style="--c:92mm"><span><b>Bimestre:</b> ${REL_BIMESTRE}</span><span><b>Data: ${REL_DATA}</b></span></p>
-        <p class="rj"><b><u>Componente(s) Curricular(es)</u></b> (assinale qual (quais) o (s) seu(s) componente(s) curricular(es)</p>
-        ${itens.map(i => `<p class="ri">( ${i === 'Ed. Física' ? 'X' : '&nbsp;&nbsp;&nbsp;'} ) ${i}</p>`).join('')}
-        <p class="rh rh1">Desenvolvimento pedagógico:</p><p class="rx">${fmt(r.p)}</p>
-        <p class="rh">Desenvolvimento comportamental e emocional:</p><p class="rx">${fmt(r.c)}</p>
-        <p class="rh">OBSERVAÇÕES FINAIS (se necessário)</p><p class="rx rxo">${fmt(r.o)}</p>
-        <p class="rh">Professor(a) responsável pelo registro: <span style="font-weight:400">${fmt(REL_PROFESSOR)}</span></p>
-        <p class="rh">Data: <span style="font-weight:400">${dataImp}</span></p>
-    </div></section>`;
-}
-
-// PDF individual por aluno (arquivo com o nome do aluno), todos baixados juntos num .zip com o nome da turma
-const LIBS_PDF = [
-    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
-];
-let libsPdfProntas = null;
-function carregarLibsPdf() {
-    if (!libsPdfProntas) libsPdfProntas = Promise.all(LIBS_PDF.map(src => new Promise((ok, erro) => {
-        const s = document.createElement('script');
-        s.src = src; s.onload = ok; s.onerror = () => erro(new Error('falha ao carregar ' + src));
-        document.head.appendChild(s);
-    }))).catch(e => { libsPdfProntas = null; throw e; });
-    return libsPdfProntas;
-}
-const nomeArquivo = t => String(t || '').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '') || 'sem nome';
-let gerandoPdfs = false;
-
-async function imprimirRelatorios() {
-    if (gerandoPdfs) return;
-    const lista = alunos
-        .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
-        .sort((a, b) => a.nome.localeCompare(b.nome));
-    if (lista.length === 0) return mostrarToast('Não há relatórios para imprimir.');
-    gerandoPdfs = true;
-    const turma = turmaAtiva;
-    const pasta = nomeArquivo(turma);
-    let area = document.getElementById('pdfRender');
-    if (!area) { area = document.createElement('div'); area.id = 'pdfRender'; area.setAttribute('aria-hidden', 'true'); document.body.appendChild(area); }
-    try {
-        mostrarToast('Preparando os PDFs…');
-        await carregarLibsPdf();
-        const { jsPDF } = window.jspdf;
-        const zip = new JSZip();
-        const dir = zip.folder(pasta);
-        const usados = new Set();
-        const dataImp = new Date().toLocaleDateString('pt-BR');
-        for (let n = 0; n < lista.length; n++) {
-            const a = lista[n];
-            mostrarToast(`Gerando PDF ${n + 1} de ${lista.length}: ${a.nome}`);
-            area.innerHTML = paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp);
-            await Promise.all([...area.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
-            const folha = area.querySelector('.folha');
-            const canvas = await html2canvas(folha, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
-            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
-            pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
-            pdf.setProperties({ title: `Relatório – ${a.nome}` });
-            let nome = nomeArquivo(a.nome), k = 2;
-            while (usados.has(nome.toLowerCase())) nome = `${nomeArquivo(a.nome)} (${k++})`;
-            usados.add(nome.toLowerCase());
-            dir.file(nome + '.pdf', pdf.output('blob'));
-        }
-        mostrarToast('Compactando…');
-        const pacote = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(pacote);
-        const link = document.createElement('a');
-        link.href = url; link.download = pasta + '.zip';
-        document.body.appendChild(link); link.click(); link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
-        mostrarToast(`${lista.length} relatório(s) baixado(s) na pasta "${pasta}".`);
-    } catch (e) {
-        console.error(e);
-        mostrarToast('Não foi possível gerar os PDFs. Verifique a internet e tente novamente.');
-    } finally {
-        area.innerHTML = '';
-        gerandoPdfs = false;
+    // INÍCIO NAVEGAÇÃO
+    function irParaPrimeiroRelatorio() {
+        const primeiro = alunos
+            .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+            .sort((a, b) => a.nome.localeCompare(b.nome))[0];
+        if (!primeiro) return mostrarToast('Esta turma ainda não tem relatórios. Clique em Gerar.');
+        rolarAte(primeiro.id);
     }
-}
 
-async function gerarTurmaToda() {
-    const turma = alunos.filter(a => a.turma === turmaAtiva);
-    const prontos = turma.filter(perfisCompletos);
-    const faltam = turma.length - prontos.length;
-    if (prontos.length === 0) return mostrarToast('Escolha os dois perfis de cada aluno para gerar.');
-    await Promise.all(prontos.map(a => gerarIndividual(a.id, false)));
-    if (faltam > 0) mostrarToast(`${faltam} aluno(s) ficaram sem relatório: faltam perfis.`);
-    const area = document.getElementById('resultadoArea');
-    if (area.classList.contains('hidden')) return;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        window.scrollTo({ top: area.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
-    }));
-}
+    function voltarAoTopo() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-       function renderRelatorios() {
-    const area = document.getElementById('resultadoArea');
-    const container = document.getElementById('listaRelatorios');
+    window.addEventListener('scroll', () => {
+        document.getElementById('btnTopo').classList.toggle('show', window.scrollY > 600);
+    }, { passive: true });
+    // FIM NAVEGAÇÃO
 
-    const filtrados = alunos
-        .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
-        .sort((a, b) => a.nome.localeCompare(b.nome));
+    // INÍCIO SELECT PRÓPRIO
+    const CS_SETA = '<svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    const CS_OK = '<svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
+    const CS_VALOR = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+    let csAberto = null;
 
-    const html = filtrados.map(a => {
-        return `<article id="rel-${a.id}" class="flex flex-col md:flex-row items-center md:items-start gap-4 p-4 rounded-2xl border relative transition-shadow" style="background:var(--bg);border-color:var(--line)">
-            <button onclick="removerRelatorio('${a.id}')" class="no-print absolute top-2 right-2 w-10 h-10 rounded-full text-gray-500 hover:bg-gray-200" aria-label="Remover relatório de ${a.nome}">✕</button>
-            ${a.foto_url ? `<img src="${a.foto_url}" alt="Foto de ${a.nome}" loading="lazy" class="w-24 h-24 rounded-2xl object-cover bg-white flex-shrink-0">` : ''}
-            <div class="flex-1 text-center md:text-justify"><p class="font-display font-semibold">${a.nome.toUpperCase()} (${turmaAtiva})</p><p class="text-sm mt-1 leading-relaxed" style="color:#2d3748">${juntarRel(relatoriosSalvosMap[a.id], '<br><br>')}</p></div></article>`;
-    }).join('');
+    function csFechar(devolverFoco = false) {
+        if (!csAberto) return;
+        const { btn, lista } = csAberto;
+        csAberto = null;
+        lista.remove();
+        btn.setAttribute('aria-expanded', 'false');
+        if (devolverFoco && btn.isConnected) btn.focus();
+    }
 
-    if (html) { area.classList.remove('hidden'); container.innerHTML = html; } else area.classList.add('hidden');
-}
+    function csAtualizar(sel) {
+        const btn = sel._csBtn;
+        if (!btn) return;
+        const op = sel.options[sel.selectedIndex];
+        const txt = op ? op.textContent : '';
+        const span = btn.firstChild;
+        if (span.textContent !== txt) span.textContent = txt;
+        span.classList.toggle('cs-vazio', sel.value === '');
+        btn.setAttribute('aria-label', (sel._csRot ? sel._csRot + ': ' : '') + txt);
+    }
 
-async function removerRelatorio(id) {
-    const a = alunos.find(al => al.id === id);
-    const ok = await confirmarSite('Excluir relatório?', `O relatório de ${a ? a.nome : 'este aluno'} será apagado. Você pode gerar outro depois.`);
-    if (!ok) return;
-    await sb.from('relatorios').delete().eq('aluno_id', id);
-    delete relatoriosSalvosMap[id];
-    renderRelatorios();
-}
-        // INÍCIO NAVEGAÇÃO
-function irParaPrimeiroRelatorio() {
-    const primeiro = alunos
-        .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
-        .sort((a, b) => a.nome.localeCompare(b.nome))[0];
-    if (!primeiro) return mostrarToast('Esta turma ainda não tem relatórios. Clique em Gerar.');
-    rolarAte(primeiro.id);
-}
-
-function voltarAoTopo() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-window.addEventListener('scroll', () => {
-    document.getElementById('btnTopo').classList.toggle('show', window.scrollY > 600);
-}, { passive: true });
-// FIM NAVEGAÇÃO
-        // INÍCIO SELECT PRÓPRIO
-const CS_SETA = '<svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-const CS_OK = '<svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
-const CS_VALOR = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
-let csAberto = null;
-
-function csFechar(devolverFoco = false) {
-    if (!csAberto) return;
-    const { btn, lista } = csAberto;
-    csAberto = null;
-    lista.remove();
-    btn.setAttribute('aria-expanded', 'false');
-    if (devolverFoco && btn.isConnected) btn.focus();
-}
-
-function csAtualizar(sel) {
-    const btn = sel._csBtn;
-    if (!btn) return;
-    const op = sel.options[sel.selectedIndex];
-    const txt = op ? op.textContent : '';
-    const span = btn.firstChild;
-    if (span.textContent !== txt) span.textContent = txt;
-    span.classList.toggle('cs-vazio', sel.value === '');
-    btn.setAttribute('aria-label', (sel._csRot ? sel._csRot + ': ' : '') + txt);
-}
-
-function csAbrir(sel) {
-    const btn = sel._csBtn;
-    if (csAberto && csAberto.btn === btn) return csFechar(true);
-    csFechar();
-    const lista = document.createElement('div');
-    lista.className = 'cs-lista';
-    lista.setAttribute('role', 'listbox');
-    lista.setAttribute('aria-label', sel._csRot || '');
-    [...sel.options].forEach(op => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'cs-op';
-        b.setAttribute('role', 'option');
-        const marcado = op.value !== '' && op.value === sel.value;
-        b.setAttribute('aria-selected', String(marcado));
-        const t = document.createElement('span');
-        t.textContent = op.textContent;
-        b.appendChild(t);
-        if (marcado) b.insertAdjacentHTML('beforeend', CS_OK);
-        b.onclick = () => {
-            csFechar(true);
-            if (sel.value !== op.value) {
-                sel.value = op.value;
-                sel.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        };
-        lista.appendChild(b);
-    });
-    lista.addEventListener('keydown', e => {
-        const ops = [...lista.querySelectorAll('.cs-op')];
-        const i = ops.indexOf(document.activeElement);
-        if (e.key === 'ArrowDown') { e.preventDefault(); ops[Math.min(i + 1, ops.length - 1)].focus(); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); ops[Math.max(i - 1, 0)].focus(); }
-        else if (e.key === 'Home') { e.preventDefault(); ops[0].focus(); }
-        else if (e.key === 'End') { e.preventDefault(); ops[ops.length - 1].focus(); }
-        else if (e.key === 'Escape') { e.preventDefault(); csFechar(true); }
-        else if (e.key === 'Tab') csFechar();
-    });
-    document.body.appendChild(lista);
-    csAberto = { btn, lista };
-    btn.setAttribute('aria-expanded', 'true');
+    function csAbrir(sel) {
+        const btn = sel._csBtn;
+        if (csAberto && csAberto.btn === btn) return csFechar(true);
+        csFechar();
+        const lista = document.createElement('div');
+        lista.className = 'cs-lista';
+        lista.setAttribute('role', 'listbox');
+        lista.setAttribute('aria-label', sel._csRot || '');
+        [...sel.options].forEach(op => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'cs-op';
+            b.setAttribute('role', 'option');
+            const marcado = op.value !== '' && op.value === sel.value;
+            b.setAttribute('aria-selected', String(marcado));
+            const t = document.createElement('span');
+            t.textContent = op.textContent;
+            b.appendChild(t);
+            if (marcado) b.insertAdjacentHTML('beforeend', CS_OK);
+            b.onclick = () => {
+                csFechar(true);
+                if (sel.value !== op.value) {
+                    sel.value = op.value;
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            };
+            lista.appendChild(b);
+        });
+        lista.addEventListener('keydown', e => {
+            const ops = [...lista.querySelectorAll('.cs-op')];
+            const i = ops.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown') { e.preventDefault(); ops[Math.min(i + 1, ops.length - 1)].focus(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); ops[Math.max(i - 1, 0)].focus(); }
+            else if (e.key === 'Home') { e.preventDefault(); ops[0].focus(); }
+            else if (e.key === 'End') { e.preventDefault(); ops[ops.length - 1].focus(); }
+            else if (e.key === 'Escape') { e.preventDefault(); csFechar(true); }
+            else if (e.key === 'Tab') csFechar();
+        });
+        document.body.appendChild(lista);
+        csAberto = { btn, lista };
+        btn.setAttribute('aria-expanded', 'true');
 
         lista.style.width = 'max-content';
-    const r = btn.getBoundingClientRect();
-    const desejada = Math.min(lista.scrollHeight + 2, 280);
-    const abaixo = window.innerHeight - r.bottom - 8;
-    const acima = r.top - 8;
-    const emBaixo = abaixo >= desejada || abaixo >= acima;
-    const altura = Math.min(desejada, emBaixo ? abaixo : acima);
+        const r = btn.getBoundingClientRect();
+        const desejada = Math.min(lista.scrollHeight + 2, 280);
+        const abaixo = window.innerHeight - r.bottom - 8;
+        const acima = r.top - 8;
+        const emBaixo = abaixo >= desejada || abaixo >= acima;
+        const altura = Math.min(desejada, emBaixo ? abaixo : acima);
         const largura = Math.min(Math.max(r.width, lista.offsetWidth), window.innerWidth - 16);
-    lista.style.width = largura + 'px';
-    lista.style.left = Math.max(8, Math.min(r.left, window.innerWidth - largura - 8)) + 'px';
-    lista.style.maxHeight = altura + 'px';
-    lista.style.top = (emBaixo ? r.bottom + 4 : r.top - 4 - altura) + 'px';
+        lista.style.width = largura + 'px';
+        lista.style.left = Math.max(8, Math.min(r.left, window.innerWidth - largura - 8)) + 'px';
+        lista.style.maxHeight = altura + 'px';
+        lista.style.top = (emBaixo ? r.bottom + 4 : r.top - 4 - altura) + 'px';
 
-    const alvo = lista.querySelector('[aria-selected="true"]') || lista.firstChild;
-    if (alvo) { alvo.focus({ preventScroll: true }); alvo.scrollIntoView({ block: 'nearest' }); }
-}
-
-function melhorarSelects() {
-    if (csAberto && !csAberto.btn.isConnected) csFechar();
-    document.querySelectorAll('select.field').forEach(sel => {
-        if (sel._csBtn) { csAtualizar(sel); return; }
-        const rotulo = sel.getAttribute('aria-label') || (document.querySelector('label[for="' + sel.id + '"]') || {}).textContent || '';
-        const wrap = document.createElement('div');
-        wrap.className = 'cs';
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'cs-btn' + (sel.classList.contains('field-sm') ? ' cs-sm' : '');
-        btn.setAttribute('aria-haspopup', 'listbox');
-        btn.setAttribute('aria-expanded', 'false');
-        btn.innerHTML = '<span class="cs-txt"></span>' + CS_SETA;
-        btn.onclick = () => csAbrir(sel);
-        btn.onkeydown = e => { if (e.key === 'ArrowDown') { e.preventDefault(); csAbrir(sel); } };
-        sel._csBtn = btn;
-        sel._csRot = rotulo.trim();
-        // Quando o código define sel.value, o botão acompanha
-        Object.defineProperty(sel, 'value', {
-            configurable: true,
-            get() { return CS_VALOR.get.call(this); },
-            set(v) { CS_VALOR.set.call(this, v); csAtualizar(this); }
-        });
-        sel.parentNode.insertBefore(wrap, sel);
-        wrap.appendChild(btn);
-        wrap.appendChild(sel);
-        sel.classList.add('cs-oculto');
-        sel.tabIndex = -1;
-        csAtualizar(sel);
-    });
-}
-
-document.addEventListener('pointerdown', e => {
-    if (!csAberto) return;
-    if (csAberto.lista.contains(e.target) || csAberto.btn.contains(e.target)) return;
-    csFechar();
-}, true);
-window.addEventListener('scroll', e => { if (csAberto && !csAberto.lista.contains(e.target)) csFechar(); }, true);
-window.addEventListener('resize', () => csFechar());
-
-// Transforma também os selects que o site cria depois (janela do aluno, lista de alunos)
-let csAgendado = false;
-new MutationObserver(() => {
-    if (csAgendado) return;
-    csAgendado = true;
-    requestAnimationFrame(() => { csAgendado = false; melhorarSelects(); });
-}).observe(document.body, { childList: true, subtree: true });
-melhorarSelects();
-// FIM SELECT PRÓPRIO
-// INÍCIO AUTH
-async function entrar() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const senha = document.getElementById('loginSenha').value;
-    const erro = document.getElementById('loginErro');
-    const btn = document.getElementById('loginBtn');
-    erro.textContent = '';
-    if (!email || !senha) { erro.textContent = 'Informe e-mail e senha.'; return; }
-    btn.disabled = true; btn.textContent = 'Entrando...';
-    const { error } = await sb.auth.signInWithPassword({ email, password: senha });
-    btn.disabled = false; btn.textContent = 'Entrar';
-    if (error) { erro.textContent = 'E-mail ou senha incorretos.'; return; }
-    document.getElementById('loginSenha').value = '';
-}
-
-async function sair() {
-    await sb.auth.signOut();
-}
-
-let usuarioAtual = null;
-sb.auth.onAuthStateChange((evento, sessao) => {
-    if (sessao && sessao.user) {
-        document.getElementById('telaLogin').classList.add('hidden');
-        // Só carrega quando o usuário muda (evita recarregar a cada renovação de token)
-        if (sessao.user.id !== usuarioAtual) {
-            usuarioAtual = sessao.user.id;
-            // setTimeout evita travar o cliente do Supabase dentro deste callback
-            setTimeout(() => { mostrarAba('alunos'); carregar(); }, 0);
-        }
-    } else {
-        usuarioAtual = null;
-        alunos = []; turmaAtiva = ""; relatoriosSalvosMap = {}; carregando = true;
-        renderTabs(); renderTabela(); renderRelatorios();
-        document.getElementById('telaLogin').classList.remove('hidden');
+        const alvo = lista.querySelector('[aria-selected="true"]') || lista.firstChild;
+        if (alvo) { alvo.focus({ preventScroll: true }); alvo.scrollIntoView({ block: 'nearest' }); }
     }
-});
-// FINAL AUTH
-    </script>
+
+    function melhorarSelects() {
+        if (csAberto && !csAberto.btn.isConnected) csFechar();
+        document.querySelectorAll('select.field').forEach(sel => {
+            if (sel._csBtn) { csAtualizar(sel); return; }
+            const rotulo = sel.getAttribute('aria-label') || (document.querySelector('label[for="' + sel.id + '"]') || {}).textContent || '';
+            const wrap = document.createElement('div');
+            wrap.className = 'cs';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'cs-btn' + (sel.classList.contains('field-sm') ? ' cs-sm' : '');
+            btn.setAttribute('aria-haspopup', 'listbox');
+            btn.setAttribute('aria-expanded', 'false');
+            btn.innerHTML = '<span class="cs-txt"></span>' + CS_SETA;
+            btn.onclick = () => csAbrir(sel);
+            btn.onkeydown = e => { if (e.key === 'ArrowDown') { e.preventDefault(); csAbrir(sel); } };
+            sel._csBtn = btn;
+            sel._csRot = rotulo.trim();
+            // Quando o código define sel.value, o botão acompanha
+            Object.defineProperty(sel, 'value', {
+                configurable: true,
+                get() { return CS_VALOR.get.call(this); },
+                set(v) { CS_VALOR.set.call(this, v); csAtualizar(this); }
+            });
+            sel.parentNode.insertBefore(wrap, sel);
+            wrap.appendChild(btn);
+            wrap.appendChild(sel);
+            sel.classList.add('cs-oculto');
+            sel.tabIndex = -1;
+            csAtualizar(sel);
+        });
+    }
+
+    document.addEventListener('pointerdown', e => {
+        if (!csAberto) return;
+        if (csAberto.lista.contains(e.target) || csAberto.btn.contains(e.target)) return;
+        csFechar();
+    }, true);
+    window.addEventListener('scroll', e => { if (csAberto && !csAberto.lista.contains(e.target)) csFechar(); }, true);
+    window.addEventListener('resize', () => csFechar());
+
+    // Transforma também os selects que o site cria depois (janela do aluno, lista de alunos)
+    let csAgendado = false;
+    new MutationObserver(() => {
+        if (csAgendado) return;
+        csAgendado = true;
+        requestAnimationFrame(() => { csAgendado = false; melhorarSelects(); });
+    }).observe(document.body, { childList: true, subtree: true });
+    melhorarSelects();
+    // FIM SELECT PRÓPRIO
+
+    // INÍCIO AUTH
+    async function entrar() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const senha = document.getElementById('loginSenha').value;
+        const erro = document.getElementById('loginErro');
+        const btn = document.getElementById('loginBtn');
+        erro.textContent = '';
+        if (!email || !senha) { erro.textContent = 'Informe e-mail e senha.'; return; }
+        btn.disabled = true; btn.textContent = 'Entrando...';
+        const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+        btn.disabled = false; btn.textContent = 'Entrar';
+        if (error) { erro.textContent = 'E-mail ou senha incorretos.'; return; }
+        document.getElementById('loginSenha').value = '';
+    }
+
+    async function sair() {
+        await sb.auth.signOut();
+    }
+
+    let usuarioAtual = null;
+    sb.auth.onAuthStateChange((evento, sessao) => {
+        if (sessao && sessao.user) {
+            document.getElementById('telaLogin').classList.add('hidden');
+            // Só carrega quando o usuário muda (evita recarregar a cada renovação de token)
+            if (sessao.user.id !== usuarioAtual) {
+                usuarioAtual = sessao.user.id;
+                // setTimeout evita travar o cliente do Supabase dentro deste callback
+                setTimeout(() => { mostrarAba('alunos'); carregar(); }, 0);
+            }
+        } else {
+            usuarioAtual = null;
+            alunos = []; turmaAtiva = ""; relatoriosSalvosMap = {}; carregando = true;
+            renderTabs(); renderTabela(); renderRelatorios();
+            document.getElementById('telaLogin').classList.remove('hidden');
+        }
+    });
+    // FINAL AUTH
+</script>
 </body>
 </html>
