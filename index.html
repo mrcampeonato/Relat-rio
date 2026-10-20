@@ -879,7 +879,7 @@ function csAbrir(sel) {
         b.type = 'button';
         b.className = 'cs-op';
         b.setAttribute('role', 'option');
-        const marcado = op.value === sel.value;
+        const marcado = op.value !== '' && op.value === sel.value;
         b.setAttribute('aria-selected', String(marcado));
         const t = document.createElement('span');
         t.textContent = op.textContent;
