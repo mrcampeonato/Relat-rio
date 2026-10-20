@@ -844,7 +844,7 @@ async function baixarDocx() {
     }
 }
 
-   
+  
     async function baixarTodasTurmas() {
     const turmas = [...new Set(alunos.map(a => a.turma))].sort()
         .filter(t => alunos.some(a => a.turma === t && relatoriosSalvosMap[a.id]));
@@ -860,22 +860,6 @@ async function baixarDocx() {
         if (!resp.ok) throw new Error('modelo-relatorio.docx não encontrado');
         const bytesModelo = await resp.arrayBuffer();
         const dataImp = new Date().toLocaleDateString('pt-BR');
-        const quebraPagina = '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>';
-
-        // Coloca a quebra de página no próprio primeiro parágrafo da página (sem criar linha extra)
-        const comQuebra = (x) => {
-            const i = x.search(/<w:p[ >]/);
-            if (i < 0 || x.slice(0, i).includes('<w:tbl')) return quebraPagina + x;
-            const j = x.indexOf('>', i) + 1;
-            const resto = x.slice(j);
-            if (/^<w:pPr>/.test(resto)) {
-                const mm = resto.match(/^<w:pPr>(<w:pStyle[^>]*\/>)?(<w:keepNext[^>]*\/>)?(<w:keepLines[^>]*\/>)?/);
-                const ate = mm[0].length;
-                if (/^<w:pPr>[\s\S]*?<w:pageBreakBefore/.test(resto.slice(0, resto.indexOf('</w:pPr>')))) return x;
-                return x.slice(0, j) + resto.slice(0, ate) + '<w:pageBreakBefore/>' + resto.slice(ate);
-            }
-            return x.slice(0, j) + '<w:pPr><w:pageBreakBefore/></w:pPr>' + resto;
-        };
 
         const zipFinal = new JSZip();
         const nomesUsados = new Set();
@@ -894,11 +878,20 @@ async function baixarDocx() {
             if (!m) throw new Error('estrutura do modelo não reconhecida');
             const [, inicio, corpo, fim] = m;
 
+            // O modelo começa com um parágrafo vazio (guarda só a definição da imagem).
+            const fimP0 = corpo.indexOf('</w:p>') + 6;
+            const p0 = corpo.slice(0, fimP0);
+            const resto = corpo.slice(fimP0);
+            // 1º relatório: mantém o parágrafo, mas sem ocupar espaço no topo
+            const p0Fino = p0.replace(/<w:spacing[^>]*\/>/, '<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>');
+            // Demais relatórios: sem o parágrafo vazio, com quebra de página no título
+            const restoComQuebra = resto.replace('<w:pPr>', '<w:pPr><w:pageBreakBefore/>');
+
             let idImg = 1;
             const paginas = lista.map((a, idx) => {
-                const p = preencherModelo(corpo, a, lerRel(relatoriosSalvosMap[a.id]), dataImp)
+                const base = idx === 0 ? p0Fino + resto : restoComQuebra;
+                return preencherModelo(base, a, lerRel(relatoriosSalvosMap[a.id]), dataImp)
                     .replace(/(<wp:docPr\b[^>]*?\sid=")\d+(")/g, (x, pre, pos) => pre + (idImg++) + pos);
-                return idx === 0 ? p : comQuebra(p);
             });
             doc.file('word/document.xml', inicio + paginas.join('') + fim);
 
