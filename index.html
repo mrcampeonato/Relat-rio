@@ -53,9 +53,23 @@
         .aba-ativa { background: var(--ink); color: #fff; border-color: var(--ink); }
         .aba-ativa:hover { background: var(--ink); }
 
-        .foto-preview { width: 52px; height: 52px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); cursor: pointer; transition: transform .15s ease; flex-shrink: 0; }
+        .foto-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 16px; border: 1px solid var(--line); cursor: pointer; transition: transform .15s ease; flex-shrink: 0; }
+@media (min-width: 640px) { .foto-preview { width: 52px; height: 52px; border-radius: 14px; } }
         .foto-preview:hover { transform: scale(1.05); }
 
+/* Lista de seleção própria do site */
+select.cs-oculto { display: none !important; }
+.cs { position: relative; width: 100%; }
+.cs-btn { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 15px; color: var(--ink); display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
+.cs-btn.cs-sm { min-height: 40px; font-size: 13px; }
+.cs-btn:focus-visible, .cs-btn[aria-expanded="true"] { border-color: var(--brand); outline: 3px solid #c7d2fe; outline-offset: 0; }
+.cs-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-vazio { color: var(--muted); }
+.cs-lista { position: fixed; z-index: 80; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px -12px rgba(20,33,61,.35); padding: 6px; overflow-y: auto; }
+.cs-op { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-align: left; cursor: pointer; color: var(--ink); background: transparent; }
+.cs-op:hover, .cs-op:focus-visible { background: #eef0fb; outline: none; }
+.cs-op[aria-selected="true"] { background: #eef0fb; color: var(--brand-d); font-weight: 600; }
+        
         /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(20,33,61,.6); z-index: 50; align-items: flex-end; justify-content: center; padding: 0; }
         .modal.active { display: flex; }
@@ -512,17 +526,32 @@ function irParaRelatorio(id) {
 async function excluirTurma() {
     const ok = await confirmarSite('Excluir turma?', `A turma "${turmaAtiva}" e todos os seus alunos serão removidos. Essa ação não pode ser desfeita.`);
     if (!ok) return;
-    await sb.from('alunos').delete().eq('turma', turmaAtiva);
+    const ids = alunos.filter(a => a.turma === turmaAtiva).map(a => a.id);
+    if (ids.length) {
+        const r1 = await sb.from('relatorios').delete().in('aluno_id', ids);
+        if (r1.error) return mostrarToast('Não foi possível excluir: ' + r1.error.message);
+    }
+    const r2 = await sb.from('alunos').delete().eq('turma', turmaAtiva).select();
+    if (r2.error) return mostrarToast('Não foi possível excluir: ' + r2.error.message);
+    if (ids.length && (!r2.data || r2.data.length === 0)) return mostrarToast('O banco não permitiu excluir a turma (permissão).');
+    ids.forEach(i => delete relatoriosSalvosMap[i]);
     turmaAtiva = "";
     await carregar();
+    mostrarToast('Turma excluída.');
 }
 
 async function remover(id) {
     const a = alunos.find(al => al.id === id);
     const ok = await confirmarSite('Excluir aluno?', `${a ? a.nome : 'Este aluno'} será removido da turma. Essa ação não pode ser desfeita.`);
     if (!ok) return;
-    await sb.from('alunos').delete().eq('id', id);
+    const r1 = await sb.from('relatorios').delete().eq('aluno_id', id);
+    if (r1.error) return mostrarToast('Não foi possível excluir: ' + r1.error.message);
+    const r2 = await sb.from('alunos').delete().eq('id', id).select();
+    if (r2.error) return mostrarToast('Não foi possível excluir: ' + r2.error.message);
+    if (!r2.data || r2.data.length === 0) return mostrarToast('O banco não permitiu excluir este aluno (permissão).');
+    delete relatoriosSalvosMap[id];
     await carregar(turmaAtiva);
+    mostrarToast('Aluno excluído.');
 }
         function renderTabs() {
     const container = document.getElementById('abasContainer');
@@ -619,12 +648,12 @@ const BANCO = {
     competitivo: {
         c1: ["Participa com grande empenho de todas as atividades e busca sempre dar o seu melhor nos jogos.", "Gosta de desafios e se envolve com muita energia nas atividades que envolvem disputa.", "Interage bem com o grupo e vem descobrindo que o jogo também é uma oportunidade de cooperação."],
         c2: ["Respeita as regras e vem aprendendo a valorizar também o processo, não só o resultado.", "Tem evoluído no cumprimento dos combinados, especialmente durante as competições.", "Responde muito bem a metas claras e aos combinados definidos antes dos jogos."],
-        c3: ["Vem desenvolvendo a habilidade de lidar com a derrota e de reconhecer o esforço dos adversários.", "Demonstra grande vontade de vencer e, com o diálogo e exemplos, aprende a transformar cada jogo em aprendizado.", "Tem controlado cada vez melhor a ansiedade nas disputas e comemorado também as conquistas da equipe."]
+        c3: ["Vem desenvolvendo a habilidade de lidar com a derrota e de reconhecer o esforço dos adversários.", "Demonstra grande vontade de vencer e, com o diálogo e exemplos, aprende a transformar cada jogo em aprendizado.", "Tem lidado cada vez melhor com as disputas e comemorado também as conquistas da equipe."]
     },
-    ansioso: {
-        c1: ["Participa das atividades com dedicação e se preocupa em fazer o melhor; com incentivo, vem se soltando cada vez mais.", "Nas atividades em grupo, busca o apoio dos colegas e do professor, o que mostra seu cuidado em fazer bem feito.", "Vem ganhando confiança para interagir, principalmente quando as atividades são explicadas passo a passo."],
+        ansioso: {
+        c1: ["Participa das atividades com dedicação e capricho, e vem se soltando cada vez mais com o incentivo do professor.", "Nas atividades em grupo, valoriza o apoio dos colegas e do professor, o que mostra seu cuidado em fazer bem feito.", "Vem ganhando confiança para interagir, principalmente quando as atividades são explicadas passo a passo."],
         c2: ["Cumpre os combinados com dedicação e valoriza as orientações para se sentir segur@.", "Demonstra cuidado com o material e com as regras e vem se adaptando bem às novidades.", "Tem ampliado sua autonomia com orientações claras e previsíveis."],
-        c3: ["Diante de desafios novos, se acalma com acolhimento e incentivo e vem ganhando tranquilidade.", "Está aprendendo a enxergar o erro como parte do aprendizado, o que fortalece sua confiança.", "Tem expressado cada vez melhor o que sente e pedido ajuda quando necessário."]
+        c3: ["Diante de desafios novos, vem ganhando segurança com acolhimento e incentivo.", "Está aprendendo a enxergar o erro como parte do aprendizado, o que fortalece sua confiança.", "Tem expressado cada vez melhor o que sente e pedido ajuda quando necessário."]
     },
     disperso: {
         c1: ["Participa das atividades e vem desenvolvendo a concentração, com bons resultados quando recebe lembretes carinhosos.", "Interage bem com os colegas e mostra evolução na atenção durante as explicações.", "Rende muito bem quando está próxim@ ao professor e recebe tarefas com objetivos curtos."],
@@ -705,8 +734,15 @@ async function gerarIndividual(id, rolar = true) {
         return;
     }
     const textoFinal = montarRelatorio(a);
+    // O texto entra no mapa antes de salvar, para a checagem de repetição da turma funcionar
     relatoriosSalvosMap[id] = textoFinal;
-    await sb.from('relatorios').upsert({ aluno_id: id, texto_completo: textoFinal });
+    await sb.from('relatorios').delete().eq('aluno_id', id);
+    const { error } = await sb.from('relatorios').insert({ aluno_id: id, texto_completo: textoFinal });
+    if (error) {
+        delete relatoriosSalvosMap[id];
+        renderRelatorios();
+        return mostrarToast('Não foi possível salvar o relatório: ' + error.message);
+    }
     renderRelatorios();
     if (rolar) rolarAte(id);
 }
@@ -799,6 +835,139 @@ window.addEventListener('scroll', () => {
     document.getElementById('btnTopo').classList.toggle('show', window.scrollY > 600);
 }, { passive: true });
 // FIM NAVEGAÇÃO
+        // INÍCIO SELECT PRÓPRIO
+const CS_SETA = '<svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+const CS_OK = '<svg class="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
+const CS_VALOR = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+let csAberto = null;
+
+function csFechar(devolverFoco = false) {
+    if (!csAberto) return;
+    const { btn, lista } = csAberto;
+    csAberto = null;
+    lista.remove();
+    btn.setAttribute('aria-expanded', 'false');
+    if (devolverFoco && btn.isConnected) btn.focus();
+}
+
+function csAtualizar(sel) {
+    const btn = sel._csBtn;
+    if (!btn) return;
+    const op = sel.options[sel.selectedIndex];
+    const txt = op ? op.textContent : '';
+    const span = btn.firstChild;
+    if (span.textContent !== txt) span.textContent = txt;
+    span.classList.toggle('cs-vazio', sel.value === '');
+    btn.setAttribute('aria-label', (sel._csRot ? sel._csRot + ': ' : '') + txt);
+}
+
+function csAbrir(sel) {
+    const btn = sel._csBtn;
+    if (csAberto && csAberto.btn === btn) return csFechar(true);
+    csFechar();
+    const lista = document.createElement('div');
+    lista.className = 'cs-lista';
+    lista.setAttribute('role', 'listbox');
+    lista.setAttribute('aria-label', sel._csRot || '');
+    [...sel.options].forEach(op => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'cs-op';
+        b.setAttribute('role', 'option');
+        const marcado = op.value === sel.value;
+        b.setAttribute('aria-selected', String(marcado));
+        const t = document.createElement('span');
+        t.textContent = op.textContent;
+        b.appendChild(t);
+        if (marcado) b.insertAdjacentHTML('beforeend', CS_OK);
+        b.onclick = () => {
+            csFechar(true);
+            if (sel.value !== op.value) {
+                sel.value = op.value;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+        lista.appendChild(b);
+    });
+    lista.addEventListener('keydown', e => {
+        const ops = [...lista.querySelectorAll('.cs-op')];
+        const i = ops.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') { e.preventDefault(); ops[Math.min(i + 1, ops.length - 1)].focus(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); ops[Math.max(i - 1, 0)].focus(); }
+        else if (e.key === 'Home') { e.preventDefault(); ops[0].focus(); }
+        else if (e.key === 'End') { e.preventDefault(); ops[ops.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); csFechar(true); }
+        else if (e.key === 'Tab') csFechar();
+    });
+    document.body.appendChild(lista);
+    csAberto = { btn, lista };
+    btn.setAttribute('aria-expanded', 'true');
+
+    const r = btn.getBoundingClientRect();
+    const desejada = Math.min(lista.scrollHeight + 2, 280);
+    const abaixo = window.innerHeight - r.bottom - 8;
+    const acima = r.top - 8;
+    const emBaixo = abaixo >= desejada || abaixo >= acima;
+    const altura = Math.min(desejada, emBaixo ? abaixo : acima);
+    const largura = Math.min(Math.max(r.width, 200), window.innerWidth - 16);
+    lista.style.width = largura + 'px';
+    lista.style.left = Math.max(8, Math.min(r.left, window.innerWidth - largura - 8)) + 'px';
+    lista.style.maxHeight = altura + 'px';
+    lista.style.top = (emBaixo ? r.bottom + 4 : r.top - 4 - altura) + 'px';
+
+    const alvo = lista.querySelector('[aria-selected="true"]') || lista.firstChild;
+    if (alvo) { alvo.focus({ preventScroll: true }); alvo.scrollIntoView({ block: 'nearest' }); }
+}
+
+function melhorarSelects() {
+    if (csAberto && !csAberto.btn.isConnected) csFechar();
+    document.querySelectorAll('select.field').forEach(sel => {
+        if (sel._csBtn) { csAtualizar(sel); return; }
+        const rotulo = sel.getAttribute('aria-label') || (document.querySelector('label[for="' + sel.id + '"]') || {}).textContent || '';
+        const wrap = document.createElement('div');
+        wrap.className = 'cs';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cs-btn' + (sel.classList.contains('field-sm') ? ' cs-sm' : '');
+        btn.setAttribute('aria-haspopup', 'listbox');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML = '<span class="cs-txt"></span>' + CS_SETA;
+        btn.onclick = () => csAbrir(sel);
+        btn.onkeydown = e => { if (e.key === 'ArrowDown') { e.preventDefault(); csAbrir(sel); } };
+        sel._csBtn = btn;
+        sel._csRot = rotulo.trim();
+        // Quando o código define sel.value, o botão acompanha
+        Object.defineProperty(sel, 'value', {
+            configurable: true,
+            get() { return CS_VALOR.get.call(this); },
+            set(v) { CS_VALOR.set.call(this, v); csAtualizar(this); }
+        });
+        sel.parentNode.insertBefore(wrap, sel);
+        wrap.appendChild(btn);
+        wrap.appendChild(sel);
+        sel.classList.add('cs-oculto');
+        sel.tabIndex = -1;
+        csAtualizar(sel);
+    });
+}
+
+document.addEventListener('pointerdown', e => {
+    if (!csAberto) return;
+    if (csAberto.lista.contains(e.target) || csAberto.btn.contains(e.target)) return;
+    csFechar();
+}, true);
+window.addEventListener('scroll', e => { if (csAberto && !csAberto.lista.contains(e.target)) csFechar(); }, true);
+window.addEventListener('resize', () => csFechar());
+
+// Transforma também os selects que o site cria depois (janela do aluno, lista de alunos)
+let csAgendado = false;
+new MutationObserver(() => {
+    if (csAgendado) return;
+    csAgendado = true;
+    requestAnimationFrame(() => { csAgendado = false; melhorarSelects(); });
+}).observe(document.body, { childList: true, subtree: true });
+melhorarSelects();
+// FIM SELECT PRÓPRIO
 // INÍCIO AUTH
 async function entrar() {
     const email = document.getElementById('loginEmail').value.trim();
