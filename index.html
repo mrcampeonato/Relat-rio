@@ -21,8 +21,7 @@
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], display: ['Poppins', 'Inter', 'sans-serif'] } } } };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
@@ -92,26 +91,10 @@
         .btn-topo:hover { opacity: 1; background: #fff; }
         /* FIM TOPO */
 
-        /* Folha usada para gerar os PDFs (fica fora da tela) */
-        #pdfRender { position: absolute; left: -10000px; top: 0; width: 210mm; }
-        #pdfRender .folha { position: relative; width: 210mm; height: 297mm; padding: 24mm 20mm 20mm; box-sizing: border-box; overflow: hidden; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #000; background: #fff; }
-        #pdfRender .folha .timbrado { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
-        #pdfRender .folha .conteudo { position: relative; z-index: 1; }
-        #pdfRender .folha p { margin: 0 0 3.8mm; line-height: 1.15; }
-        #pdfRender .rt { text-align: center; font-weight: 700; }
-        #pdfRender .rg { display: grid; grid-template-columns: var(--c) 1fr; }
-        #pdfRender .rj { text-align: justify; }
-        #pdfRender .ri { font-weight: 700; margin-bottom: 1.2mm !important; }
-        #pdfRender .rh { font-weight: 700; margin-bottom: 1mm !important; }
-        #pdfRender .rh1 { margin-top: 6mm !important; }
-        #pdfRender .rx { font-size: 10pt; line-height: 1.3 !important; text-align: justify; min-height: 15mm; margin-bottom: 3mm !important; }
-        #pdfRender .rxo { min-height: 14mm; }
+        
 
         @media print { .no-print { display: none !important; } body { background: #fff; } }
-        #folhaImpressao { display: none; }
         @media print {
-            @page { size: A4; margin: 0; }
-            body > *:not(#folhaImpressao) { display: none !important; }
             #folhaImpressao { display: block; }
             .folha { position: relative; width: 210mm; height: 297mm; padding: 24mm 20mm 20mm; box-sizing: border-box; overflow: hidden; break-after: page; page-break-after: always; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; color: #000; }
             .folha:last-child { break-after: auto; page-break-after: auto; }
@@ -238,8 +221,7 @@
                 <h2 class="font-display font-semibold text-2xl">Relatórios gerados</h2>
                 <div class="flex gap-2">
                     <button onclick="copiarRelatorios()" class="btn btn-ghost">Copiar</button>
-                    <button id="btnPdf" onclick="baixarPDFs()" class="btn btn-primary">Baixar PDFs</button>
-                    <button onclick="imprimirRelatorios()" class="btn btn-ghost">Imprimir</button>
+                    <button id="btnDocx" onclick="baixarDocx()" class="btn btn-primary">Baixar Word</button>
                 </div>
             </div>
             <div id="listaRelatorios" class="space-y-4"></div>
@@ -280,8 +262,6 @@
         </section>
     </div>
 </main>
-<div id="folhaImpressao"></div>
-<div id="pdfRender" class="no-print" aria-hidden="true"></div>
 
 <script>
     const SUPABASE_URL = 'https://pojvyniepaloewkqmwsq.supabase.co'.trim();
@@ -783,92 +763,85 @@
         if (rolar) rolarAte(id);
     }
 
-    function paginaRel(a, r, dataImp) {
-        const fmt = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        const itens = ['Língua Portuguesa', 'Matemática', 'Ciências Naturais', 'História / Geografia', 'Arte', 'Socioemocional', 'Ed. Física', 'Inglês', 'Música', 'Balé/ Judô'];
-        const topo = '<img class="timbrado" src="timbrado-relatorio.webp" alt="">';
-        return `<section class="folha">${topo}<div class="conteudo">
-            <p class="rt">RELATÓRIO INDIVIDUAL DE DESENVOLVIMENTO DO ESTUDANTE</p>
-            <p class="rt">Ensino Fundamental – Anos Iniciais | 1º ao 5º ano</p>
-            <p><b>Estudante:</b> ${fmt(a.nome)}</p>
-            <p class="rg" style="--c:101mm"><span><b>Turma:</b> ${fmt(a.turma)}</span><span><b>Ano letivo:</b> ${REL_ANO}</span></p>
-            <p class="rg" style="--c:92mm"><span><b>Bimestre:</b> ${REL_BIMESTRE}</span><span><b>Data: ${REL_DATA}</b></span></p>
-            <p class="rj"><b><u>Componente(s) Curricular(es)</u></b> (assinale qual (quais) o (s) seu(s) componente(s) curricular(es)</p>
-            ${itens.map(i => `<p class="ri">( ${i === 'Ed. Física' ? 'X' : '&nbsp;&nbsp;&nbsp;'} ) ${i}</p>`).join('')}
-            <p class="rh rh1">Desenvolvimento pedagógico:</p><p class="rx">${fmt(r.p)}</p>
-            <p class="rh">Desenvolvimento comportamental e emocional:</p><p class="rx">${fmt(r.c)}</p>
-            <p class="rh">OBSERVAÇÕES FINAIS (se necessário)</p><p class="rx rxo">${fmt(r.o)}</p>
-            <p class="rh">Professor(a) responsável pelo registro: <span style="font-weight:400">${fmt(REL_PROFESSOR)}</span></p>
-            <p class="rh">Data: <span style="font-weight:400">${dataImp}</span></p>
-        </div></section>`;
-    }
-
-    async function imprimirRelatorios() {
-        const lista = alunos
-            .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
-            .sort((a, b) => a.nome.localeCompare(b.nome));
-        if (lista.length === 0) return mostrarToast('Não há relatórios para imprimir.');
-        const area = document.getElementById('folhaImpressao');
-        const dataImp = new Date().toLocaleDateString('pt-BR');
-        area.innerHTML = lista.map(a => paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp)).join('');
-        await Promise.all([...area.querySelectorAll('img')].map(i => i.decode().catch(() => {})));
-        window.print();
-    }
+    
 
     function nomeArquivoSeguro(s) {
         return String(s).replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim() || 'sem-nome';
     }
 
-    async function baixarPDFs() {
-        const lista = alunos
-            .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
-            .sort((a, b) => a.nome.localeCompare(b.nome));
-        if (lista.length === 0) return mostrarToast('Não há relatórios para baixar.');
-        if (!window.html2canvas || !window.jspdf || !window.JSZip) return mostrarToast('Bibliotecas ainda carregando. Tente de novo em instantes.');
+    // ===== RELATÓRIOS EM WORD (.docx) A PARTIR DO MODELO DA COORDENAÇÃO =====
+// Requer o arquivo "modelo-relatorio.docx" na mesma pasta do index.html.
 
-        const { jsPDF } = window.jspdf;
-        const btn = document.getElementById('btnPdf');
-        const area = document.getElementById('pdfRender');
+const MODELO_DOCX = 'modelo-relatorio.docx';
+
+function xmlSeguro(t) {
+    return String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Preenche os campos {{...}} do modelo com os dados de um aluno
+function preencherModelo(xml, a, r, dataImp) {
+    const campos = {
+        ESTUDANTE: a.nome, TURMA: a.turma, ANO: REL_ANO, BIMESTRE: REL_BIMESTRE,
+        DATA_MES: REL_DATA, PEDAGOGICO: r.p, COMPORTAMENTAL: r.c, OBSERVACOES: r.o,
+        PROFESSOR: REL_PROFESSOR, DATA_IMP: dataImp
+    };
+    return xml.replace(/\{\{([A-Z_]+)\}\}/g, (m, k) => k in campos ? xmlSeguro(campos[k]) : m);
+}
+
+async function baixarDocx() {
+    const lista = alunos
+        .filter(a => a.turma === turmaAtiva && relatoriosSalvosMap[a.id])
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+    if (lista.length === 0) return mostrarToast('Não há relatórios para baixar.');
+    if (!window.JSZip) return mostrarToast('Biblioteca ainda carregando. Tente de novo em instantes.');
+
+    const btn = document.getElementById('btnDocx');
+    btn.disabled = true;
+    btn.textContent = 'Preparando...';
+    try {
+        const resp = await fetch(MODELO_DOCX, { cache: 'no-cache' });
+        if (!resp.ok) throw new Error('modelo-relatorio.docx não encontrado');
+        const bytesModelo = await resp.arrayBuffer();
+
         const dataImp = new Date().toLocaleDateString('pt-BR');
         const nomePasta = nomeArquivoSeguro(turmaAtiva);
-        const zip = new JSZip();
-        const pasta = zip.folder(nomePasta);
+        const zipFinal = new JSZip();
+        const pasta = zipFinal.folder(nomePasta);
         const usados = new Set();
-        btn.disabled = true;
 
-        try {
-            for (let i = 0; i < lista.length; i++) {
-                const a = lista[i];
-                btn.textContent = `Gerando ${i + 1}/${lista.length}...`;
-                area.innerHTML = paginaRel(a, lerRel(relatoriosSalvosMap[a.id]), dataImp);
-                await Promise.all([...area.querySelectorAll('img')].map(im => im.decode().catch(() => {})));
-                const canvas = await html2canvas(area.querySelector('.folha'), { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 });
-                const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-                pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
-
-                let nome = nomeArquivoSeguro(a.nome), n = 2;
-                while (usados.has(nome.toLowerCase())) nome = nomeArquivoSeguro(a.nome) + ' (' + n++ + ')';
-                usados.add(nome.toLowerCase());
-                pasta.file(nome + '.pdf', pdf.output('arraybuffer'));
-            }
-            btn.textContent = 'Compactando...';
-            const blob = await zip.generateAsync({ type: 'blob' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = nomePasta + '.zip';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => URL.revokeObjectURL(link.href), 10000);
-            mostrarToast(`${lista.length} PDF(s) baixados na pasta "${nomePasta}".`);
-        } catch (e) {
-            mostrarToast('Não foi possível gerar os PDFs: ' + (e.message || e));
-        } finally {
-            area.innerHTML = '';
-            btn.disabled = false;
-            btn.textContent = 'Baixar PDFs';
+        for (let i = 0; i < lista.length; i++) {
+            const a = lista[i];
+            btn.textContent = `Gerando ${i + 1}/${lista.length}...`;
+            const doc = await JSZip.loadAsync(bytesModelo);
+            const xml = await doc.file('word/document.xml').async('string');
+            doc.file('word/document.xml', preencherModelo(xml, a, lerRel(relatoriosSalvosMap[a.id]), dataImp));
+            const bytes = await doc.generateAsync({
+                type: 'arraybuffer', compression: 'DEFLATE',
+                mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            });
+            let nome = nomeArquivoSeguro(a.nome), n = 2;
+            while (usados.has(nome.toLowerCase())) nome = nomeArquivoSeguro(a.nome) + ' (' + n++ + ')';
+            usados.add(nome.toLowerCase());
+            pasta.file(nome + '.docx', bytes);
         }
+
+        btn.textContent = 'Compactando...';
+        const blob = await zipFinal.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = nomePasta + '.zip';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+        mostrarToast(`${lista.length} arquivo(s) Word baixados na pasta "${nomePasta}".`);
+    } catch (e) {
+        mostrarToast('Não foi possível gerar os arquivos: ' + (e.message || e));
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Baixar Word';
     }
+}
 
     async function gerarTurmaToda() {
         const turma = alunos.filter(a => a.turma === turmaAtiva);
